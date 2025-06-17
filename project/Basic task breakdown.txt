@@ -1,0 +1,405 @@
+Project management
+	Tools --> Tools are set
+        Source control - Git, GitKraken, Azure Devops
+        Game engine - Godot
+        Team collaboration - Teams
+        Work tracking - Azure Devops (azdo)
+	Work breakdown	--> WBS in azdo
+        Basic work outline for entire project
+        Enter work item outline into azdo
+	Schedule --> Delivery plan in azdo
+        Build DAG from the WBS
+        Set the project milestones
+        Determine target release dates
+Concept development
+    Training
+        Using the project Tools
+        Writing a user story
+	Core mechanics --> Game design doc
+        Research how these should work
+        Adapt theory to holy cheese
+        Resource management
+	Gameplay loop --> Game design doc
+        Research gameplay loops
+        Describe the holy cheese loop(s) unambiguously
+	Level structure and mechanics --> Game design doc
+        Research level design for tower defense games
+        Enumerate the Holy Cheese level design principles
+	Prototyping --> Simple working game
+        Build basic game prototype
+            New project in Godot for game
+            Simplistic level and units
+		    Basic mechanics
+            Telemetry for mechanics
+            Iterate on mechanics
+	    Early art and animation
+            Basic cat tower animation
+            Basic rat unit animation
+            Basic level image
+	Progression systems --> Game design doc
+		Unit base mechanics
+            Hero mechanics - General Clawdius Maximus
+            Hero mechanics - Sir Pounce-a-Lot
+            Hero mechanics - Meowdusa
+            Hero mechanics - Purrlin the Mage
+            Hero mechanics - Graybeard the Gnawer
+            Hero mechanics - Fleablight
+            Hero mechanics - Stormtail
+            Hero mechanics - Chitterjaw
+            Hero mechanics - Rat King
+            Basic Squeakers
+            Flashpaws
+            Mindwhiskers
+            Titantails
+            Voltfangs
+            Shadowsnouts
+            Gutrotters
+            Bonecrunchers
+            Shriekmaw
+            Cinderfur
+            Frostfeet
+            Fleabombs
+            Chewtank
+            Basic Claw Tower
+            Sticky Paws Tower
+            Cat Nap Tower
+            Pied Piper Tower
+            Yarn Ball Tower
+            Hero Towers
+            Mouse Trap Tower
+            Sticky Trap Tower
+            Fish Bone Tower
+            Tuna Storm Tower
+            Drenched Paw Tower
+            Blazing Whisker Tower
+		Difficulty mechanics
+            Easy mechanics
+            Medium mechanics
+            Hard mechanics
+		Unit progressions
+            Hero mechanics - General Clawdius Maximus
+            Hero mechanics - Sir Pounce-a-Lot
+            Hero mechanics - Meowdusa
+            Hero mechanics - Purrlin the Mage
+            Hero mechanics - Graybeard the Gnawer
+            Hero mechanics - Fleablight
+            Hero mechanics - Stormtail
+            Hero mechanics - Chitterjaw
+            Hero mechanics - Rat King
+            Basic Squeakers
+            Flashpaws
+            Mindwhiskers
+            Titantails
+            Voltfangs
+            Shadowsnouts
+            Gutrotters
+            Bonecrunchers
+            Shriekmaw
+            Cinderfur
+            Frostfeet
+            Fleabombs
+            Chewtank
+            Basic Claw Tower
+            Sticky Paws Tower
+            Cat Nap Tower
+            Pied Piper Tower
+            Yarn Ball Tower
+            Hero Towers
+            Mouse Trap Tower
+            Sticky Trap Tower
+            Fish Bone Tower
+            Tuna Storm Tower
+            Drenched Paw Tower
+            Blazing Whisker Tower
+		Player progression
+            Design player progression system
+            Document player progression system
+		Identify other desired progressions
+            Study other tower games for progression ideas
+            Brainstorm progression with the team
+            Document additonal progression systems
+Story development
+	Story outline --> Narrative doc
+        Narrative guidelines
+        Character sheets
+        Story outline
+        Identify story cutscenes
+    Storyboard the cutscenes
+        Introduction
+        Level 1
+        Level 2
+        Level 3
+        Level 4
+        Level 5
+        Level 6
+        Level 7
+        Level 8
+        Level 9
+        Level 10
+        Level 11
+        Level 12
+        Level 13
+        Level 14
+        Level 15
+        Level 16
+        Level 17
+        Level 18
+        Level 19
+        Level 20
+Art and design
+	UI/UX design --> Image mock-ups
+        UX flow
+            Identify interaction points
+            Create tickets for each UI component
+            Diagram user flow between points
+        Starting screen
+        Level selection screen
+        Profile screen
+        Login dialog
+	Level environmental design --> Image mock-ups
+        Level 1
+        Level 2
+        Level 3
+        Level 4
+        Level 5
+        Level 6
+        Level 7
+        Level 8
+        Level 9
+        Level 10
+        Level 11
+        Level 12
+        Level 13
+        Level 14
+        Level 15
+        Level 16
+        Level 17
+        Level 18
+        Level 19
+        Level 20
+	Unit animation --> Sprite sheets
+        Hero sprite sheet - General Clawdius Maximus
+        Hero sprite sheet - Sir Pounce-a-Lot
+        Hero sprite sheet - Meowdusa
+        Hero sprite sheet - Purrlin the Mage
+        Hero sprite sheet - Graybeard the Gnawer
+        Hero sprite sheet - Fleablight
+        Hero sprite sheet - Stormtail
+        Hero sprite sheet - Chitterjaw
+        Hero sprite sheet - Rat King
+        Sprite sheet - Basic Squeakers
+        Sprite sheet - Flashpaws
+        Sprite sheet - Mindwhiskers
+        Sprite sheet - Titantails
+        Sprite sheet - Voltfangs
+        Sprite sheet - Shadowsnouts
+        Sprite sheet - Gutrotters
+        Sprite sheet - Bonecrunchers
+        Sprite sheet - Shriekmaw
+        Sprite sheet - Cinderfur
+        Sprite sheet - Frostfeet
+        Sprite sheet - Fleabombs
+        Sprite sheet - Chewtank
+        Sprite sheet - Basic Claw Tower
+        Sprite sheet - Sticky Paws Tower
+        Sprite sheet - Cat Nap Tower
+        Sprite sheet - Pied Piper Tower
+        Sprite sheet - Yarn Ball Tower
+        Sprite sheet - Hero Towers
+        Sprite sheet - Mouse Trap Tower
+        Sprite sheet - Sticky Trap Tower
+        Sprite sheet - Fish Bone Tower
+        Sprite sheet - Tuna Storm Tower
+        Sprite sheet - Drenched Paw Tower
+        Sprite sheet - Blazing Whisker Tower
+Audio
+	Sound effects --> Audio files
+        UI sound effects
+        Level sound effects
+            Animals
+            Natural
+        Unit sound effects
+            Sound effects - General Clawdius Maximus
+            Sound effects - Sir Pounce-a-Lot
+            Sound effects - Meowdusa
+            Sound effects - Purrlin the Mage
+            Sound effects - Graybeard the Gnawer
+            Sound effects - Fleablight
+            Sound effects - Stormtail
+            Sound effects - Chitterjaw
+            Sound effects - Rat King
+            Sound effects - Basic Squeakers
+            Sound effects - Flashpaws
+            Sound effects - Mindwhiskers
+            Sound effects - Titantails
+            Sound effects - Voltfangs
+            Sound effects - Shadowsnouts
+            Sound effects - Gutrotters
+            Sound effects - Bonecrunchers
+            Sound effects - Shriekmaw
+            Sound effects - Cinderfur
+            Sound effects - Frostfeet
+            Sound effects - Fleabombs
+            Sound effects - Chewtank
+            Sound effects - Basic Claw Tower
+            Sound effects - Sticky Paws Tower
+            Sound effects - Cat Nap Tower
+            Sound effects - Pied Piper Tower
+            Sound effects - Yarn Ball Tower
+            Sound effects - Hero Towers
+            Sound effects - Mouse Trap Tower
+            Sound effects - Sticky Trap Tower
+            Sound effects - Fish Bone Tower
+            Sound effects - Tuna Storm Tower
+            Sound effects - Drenched Paw Tower
+            Sound effects - Blazing Whisker Tower
+	Background music --> Audio files
+        Main theme to play in UI
+        Music for levels
+            Background music for level 1
+            Background music for level 2
+            Background music for level 3
+            Background music for level 4
+            Background music for level 5
+            Background music for level 6
+            Background music for level 7
+            Background music for level 8
+            Background music for level 9
+            Background music for level 10
+            Background music for level 11
+            Background music for level 12
+            Background music for level 13
+            Background music for level 14
+            Background music for level 15
+            Background music for level 16
+            Background music for level 17
+            Background music for level 18
+            Background music for level 19
+            Background music for level 20        
+        Music for cutscenes
+            Musical score for introduction
+            Musical score for level 1 cutscene
+            Musical score for level 2 cutscene
+            Musical score for level 3 cutscene
+            Musical score for level 4 cutscene
+            Musical score for level 5 cutscene
+            Musical score for level 6 cutscene
+            Musical score for level 7 cutscene
+            Musical score for level 8 cutscene
+            Musical score for level 9 cutscene
+            Musical score for level 10 cutscene
+            Musical score for level 11 cutscene
+            Musical score for level 12 cutscene
+            Musical score for level 13 cutscene
+            Musical score for level 14 cutscene
+            Musical score for level 15 cutscene
+            Musical score for level 16 cutscene
+            Musical score for level 17 cutscene
+            Musical score for level 18 cutscene
+            Musical score for level 19 cutscene
+            Musical score for level 20 cutscene
+	Voiceovers for cutscenes --> Audio files
+            Voiceoves for introduction
+            Voiceoves for level 1 cutscene
+            Voiceoves for level 2 cutscene
+            Voiceoves for level 3 cutscene
+            Voiceoves for level 4 cutscene
+            Voiceoves for level 5 cutscene
+            Voiceoves for level 6 cutscene
+            Voiceoves for level 7 cutscene
+            Voiceoves for level 8 cutscene
+            Voiceoves for level 9 cutscene
+            Voiceoves for level 10 cutscene
+            Voiceoves for level 11 cutscene
+            Voiceoves for level 12 cutscene
+            Voiceoves for level 13 cutscene
+            Voiceoves for level 14 cutscene
+            Voiceoves for level 15 cutscene
+            Voiceoves for level 16 cutscene
+            Voiceoves for level 17 cutscene
+            Voiceoves for level 18 cutscene
+            Voiceoves for level 19 cutscene
+            Voiceoves for level 20 cutscene
+Programming
+	Training
+		Technical game design
+		Godot
+	Technical design --> Technical design doc
+        Non-functional requirements
+            Performance
+            Security
+            Scalability
+            Availability
+            Reliability
+            Maintainability
+        Backend
+        Database
+        Frontend
+        Communication
+        Integration with game engine
+	Implementation --> Working game code
+	Level design tool --> Working level design tool
+        Technical design
+        Implementation
+        Testing
+Level design
+	Level layout and scripting --> Working levels
+        Level 1
+        Level 2
+        Level 3
+        Level 4
+        Level 5
+        Level 6
+        Level 7
+        Level 8
+        Level 9
+        Level 10
+        Level 11
+        Level 12
+        Level 13
+        Level 14
+        Level 15
+        Level 16
+        Level 17
+        Level 18
+        Level 19
+        Level 20
+	Balancing and pacing iteration --> Working levels
+DevOps
+    Integration pipeline setup
+    Environment setup
+    Deployment pipeline setup
+Testing
+	Training
+		Basic testing concepts
+		Test plans in Azure Devops
+		Automated testing
+	Internal Testing
+		 Write test cases --> Step by step test cases
+		 Construct automated tests --> Working test scripts
+		 Run automated tests --> Test results and bugs for defects
+		 Execute manual tests --> Test results and bugs for defects
+		 Fix bugs --> Working code
+	External Testing
+		 Alpha testing --> Public alpha program
+		 Beta testing --> Public beta program
+		 Player feedback collection --> Database of player feedback
+Launch
+	Marketing & Promotion
+	    Trailers creation
+	    Social media
+	    Press kits
+	    Influencer outreach
+	Distribution
+	Platform submission
+		Steam
+		Mobile
+		Consoles
+	Day-one patch and sport
+Post-Launch
+	Sport & dates
+	    Bug fixes and patches
+	    Content dates and DLC
+	Community Engagement
+	    Forums and social media
+	    Feedback loops for future improvements

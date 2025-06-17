@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "appInsights2": {
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/microsoft.insights/components/HolyCheese-Azdo-Tools",
+      "type": "appInsights.azure",
+      "connectionId": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+      "dynamicId": null
+    },
+    "appInsights1": {
+      "ignored": "true",
+      "type": "appInsights"
+    },
+    "storage1": {
+      "serviceConnectorResourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('serviceConnectorResourceGroupName')]/providers/Microsoft.Web/sites/HolyCheese-Azdo-Tools/providers/Microsoft.ServiceLinker/linkers/AzureWebJobsStorage_708023388D, /subscriptions/42a2eb5c-8d13-451c-8b50-069e05cdbf86/resourceGroups/HolyCheese-RG/providers/Microsoft.Web/sites/HolyCheese-Azdo-Tools/providers/Microsoft.ServiceLinker/linkers/AzureWebJobsStorage_F6BF960C13",
+      "secretStore": "AzureAppSettings",
+      "resourceId": "/subscriptions/[parameters('subscriptionId')]/resourceGroups/[parameters('resourceGroupName')]/providers/Microsoft.Storage/storageAccounts/holycheesestorage",
+      "type": "storage.azure",
+      "connectionId": "AzureWebJobsStorage",
+      "dynamicId": null
+    }
+  }
+}
