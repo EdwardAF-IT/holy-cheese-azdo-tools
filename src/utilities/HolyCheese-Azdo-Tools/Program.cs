@@ -1,3 +1,4 @@
+using HolyCheese_Azdo_Tools.TagTools;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,7 @@ builder.ConfigureFunctionsWebApplication();
 
 builder.Services
     .AddApplicationInsightsTelemetryWorkerService()
-    .ConfigureFunctionsApplicationInsights();
+    .ConfigureFunctionsApplicationInsights()
+    .AddSingleton<Azdo_Tools_Helper>();
 
 builder.Build().Run();

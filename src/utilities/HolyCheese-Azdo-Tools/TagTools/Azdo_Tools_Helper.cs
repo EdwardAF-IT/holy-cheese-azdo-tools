@@ -25,15 +25,14 @@ namespace HolyCheese_Azdo_Tools.TagTools
         public Azdo_Tools_Helper(ILoggerFactory loggerFactory, HttpClient client)
         {
             _log = loggerFactory.CreateLogger("Azdo_Tools_Helper");
-            string? _org = Environment.GetEnvironmentVariable("DevOpsOrgName");
-            string? _pat = Environment.GetEnvironmentVariable("DevOpsPAT");
 
-            if (string.IsNullOrWhiteSpace(_org))
-                throw new InvalidOperationException("DevOpsOrgName environment variable is not set.");
-            if (string.IsNullOrWhiteSpace(_pat))
-                throw new InvalidOperationException("DevOpsPAT environment variable is not set.");
+            // Initialize _org and _pat directly from environment variables
+            _org = Environment.GetEnvironmentVariable("DevOpsOrgName")
+                ?? throw new InvalidOperationException("DevOpsOrgName environment variable is not set in Key Vault.");
+            _pat = Environment.GetEnvironmentVariable("DevOpsPAT")
+                ?? throw new InvalidOperationException("DevOpsPAT environment variable is not set in Key Vault.");
 
-            _client = client ?? throw new ArgumentNullException(nameof(client));
+            using var _ = _client = client ?? throw new ArgumentNullException(nameof(client));
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                 "Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($":{_pat}"))
             );
