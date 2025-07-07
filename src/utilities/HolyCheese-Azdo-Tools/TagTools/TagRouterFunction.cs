@@ -1,7 +1,7 @@
 using Azure;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -20,25 +20,37 @@ namespace HolyCheese_Azdo_Tools.TagTools
     /// </summary>
     public class TagRouterFunction
     {
+        private readonly Azdo_Tools_Helper _tools;
+        private readonly AddTagHandler _addHandler;
+        private readonly RemoveTagHandler _removeHandler;
+
+        public TagRouterFunction(
+            Azdo_Tools_Helper tools,
+            AddTagHandler addHandler,
+            RemoveTagHandler removeHandler)
+        {
+            _tools = tools;
+            _addHandler = addHandler;
+            _removeHandler = removeHandler;
+        }
+
         [Function("TagRouter")]
         public async Task<HttpResponseData> Run(
             [HttpTrigger("post", Route = "TagOps/{action}")] HttpRequestData req,
-            string action,
-            ILoggerFactory loggerFactory)
+            string action)
         {
             HttpResponseData response;
             try
             {
-                // Initialize utility helper class with shared logger and HttpClient
-                using var httpClient = new HttpClient();
-                var tools = new Azdo_Tools_Helper(loggerFactory, httpClient);
-
                 // Extract work item ID and tag from POST body
                 if (req is null || req.Body == null)
                 {
-                    var badRequestResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-                    await badRequestResponse.WriteStringAsync("Request body cannot be null or empty.");
-                    return badRequestResponse;
+                    var badRequestResponse = req?.CreateResponse(HttpStatusCode.BadRequest);
+                    if (badRequestResponse != null)
+                    {
+                        await badRequestResponse.WriteStringAsync("Request body cannot be null or empty.");
+                    }
+                    return badRequestResponse!;
                 }
 
                 using var reader = new StreamReader(req.Body);
@@ -71,10 +83,10 @@ namespace HolyCheese_Azdo_Tools.TagTools
                 }
 
                 // Dynamically route to tag action handler
-                ITagAction? handler = action?.ToLowerInvariant() switch
+                var handler = action?.ToLowerInvariant() switch
                 {
-                    "add" => new AddTagHandler(tools),
-                    "remove" => new RemoveTagHandler(tools),
+                    "add" => (ITagAction)_addHandler,
+                    "remove" => (ITagAction)_removeHandler,
                     _ => null
                 };
 

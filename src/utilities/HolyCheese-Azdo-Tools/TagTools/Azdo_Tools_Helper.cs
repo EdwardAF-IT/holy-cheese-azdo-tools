@@ -32,7 +32,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
             _pat = Environment.GetEnvironmentVariable("DevOpsPAT")
                 ?? throw new InvalidOperationException("DevOpsPAT environment variable is not set in Key Vault.");
 
-            using var _ = _client = client ?? throw new ArgumentNullException(nameof(client));
+            _client = client ?? throw new ArgumentNullException(nameof(client));
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
                 "Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($":{_pat}"))
             );
@@ -101,32 +101,72 @@ namespace HolyCheese_Azdo_Tools.TagTools
 
         /// <summary>
         /// Adds a tag to a work item, avoiding case-insensitive duplicates.
+        /// Returns null on success, or an error message string on failure.
         /// </summary>
-        public async Task AddTagAsync(int workItemId, string tag)
+        public async Task<string?> AddTagAsync(int workItemId, string tag)
         {
-            var (tags, hasTagsField) = await GetExistingTagsAsync(workItemId);
-
-            if (tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
+            try
             {
-                _log.LogDebug($"Work item {workItemId}: Tag '{tag}' already exists. No update.");
-                return;
-            }
+                var (tags, hasTagsField) = await GetExistingTagsAsync(workItemId);
 
-            await PatchTagsAsync(workItemId, tags.Append(tag).ToArray(), hasTagsField);
+                if (tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
+                {
+                    _log.LogDebug($"Work item {workItemId}: Tag '{tag}' already exists. No update.");
+                    return null;
+                }
+
+                await PatchTagsAsync(workItemId, tags.Append(tag).ToArray(), hasTagsField);
+                return null;
+            }
+            catch (HttpRequestException ex)
+            {
+                _log.LogError(ex, $"Error connecting to Azure DevOps while adding tag to work item {workItemId}.");
+                return "Error connecting to Azure DevOps. Please check your network connection and credentials.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                _log.LogError(ex, $"Work item {workItemId} not found or invalid operation while adding tag.");
+                return $"Work item {workItemId} not found or invalid operation.";
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, $"Unexpected error while adding tag to work item {workItemId}.");
+                return "An unexpected error occurred while adding the tag.";
+            }
         }
 
         /// <summary>
         /// Removes a tag from a work item if it exists.
+        /// Returns null on success, or an error message string on failure.
         /// </summary>
-        public async Task RemoveTagAsync(int workItemId, string tag)
+        public async Task<string?> RemoveTagAsync(int workItemId, string tag)
         {
-            var (tags, hasTagsField) = await GetExistingTagsAsync(workItemId);
-            var updatedTags = tags
-                .Where(t => !t.Equals(tag, StringComparison.OrdinalIgnoreCase))
-                .ToArray();
+            try
+            {
+                var (tags, hasTagsField) = await GetExistingTagsAsync(workItemId);
+                var updatedTags = tags
+                    .Where(t => !t.Equals(tag, StringComparison.OrdinalIgnoreCase))
+                    .ToArray();
 
-            _log.LogDebug($"Work item {workItemId}: Attempting to remove tag '{tag}'.");
-            await PatchTagsAsync(workItemId, updatedTags, hasTagsField);
+                _log.LogDebug($"Work item {workItemId}: Attempting to remove tag '{tag}'.");
+                await PatchTagsAsync(workItemId, updatedTags, hasTagsField);
+                return null;
+            }
+            catch (HttpRequestException ex)
+            {
+                _log.LogError(ex, $"Error connecting to Azure DevOps while removing tag from work item {workItemId}.");
+                return "Error connecting to Azure DevOps. Please check your network connection and credentials.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                _log.LogError(ex, $"Work item {workItemId} not found or invalid operation while removing tag.");
+                return $"Work item {workItemId} not found or invalid operation.";
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, $"Unexpected error while removing tag from work item {workItemId}.");
+                return "An unexpected error occurred while removing the tag.";
+            }
         }
     }
 }

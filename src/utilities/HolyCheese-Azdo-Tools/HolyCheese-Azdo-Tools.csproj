@@ -8,7 +8,6 @@
     <RootNamespace>HolyCheese_Azdo_Tools</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Azure.Data.Tables" Version="12.10.0" />
     <PackageReference Include="Azure.Identity" Version="1.13.2" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.24.0" />
@@ -19,8 +18,6 @@
     <PackageReference Include="Microsoft.Azure.Functions.Worker.ApplicationInsights" Version="2.0.0" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Extensions.Http.AspNetCore" Version="2.0.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Worker.Sdk" Version="2.0.2" />
-    <PackageReference Include="Microsoft.Azure.WebJobs" Version="3.0.41" />
-    <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.Http" Version="3.2.0" />
     <PackageReference Include="Microsoft.Extensions.Azure" Version="1.11.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>

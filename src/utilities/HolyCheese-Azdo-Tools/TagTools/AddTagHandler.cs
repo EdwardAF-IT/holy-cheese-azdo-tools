@@ -1,9 +1,8 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using System.Net;
+using System.Net.Http.Json;
 
 namespace HolyCheese_Azdo_Tools.TagTools
 {
@@ -23,8 +22,17 @@ namespace HolyCheese_Azdo_Tools.TagTools
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, int workItemId, string tag)
         {
             await _tools.AddTagAsync(workItemId, tag);
-            return req.CreateResponse(HttpStatusCode.OK,
-                $"Tag '{tag}' added to work item {workItemId}.");
+
+            // Replace CreateResponse with a proper HttpResponseMessage creation
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new
+                {
+                    Message = $"Tag '{tag}' added to work item {workItemId}."
+                })
+            };
+
+            return response;
         }
     }
 }
