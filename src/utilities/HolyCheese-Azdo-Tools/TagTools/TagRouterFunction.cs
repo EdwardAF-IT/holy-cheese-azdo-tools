@@ -13,11 +13,7 @@ using System.Threading.Tasks;
 
 using HttpTriggerAttribute = Microsoft.Azure.Functions.Worker.HttpTriggerAttribute;
 
-namespace HolyCheese_Azdo_Tools.TagTools
 {
-    /// <summary>
-    /// Azure Function that routes tag actions via /TagOps/{action} using strategy handlers.
-    /// </summary>
     public class TagRouterFunction
     {
         private readonly Azdo_Tools_Helper _tools;
