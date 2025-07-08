@@ -21,7 +21,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
 
         public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, int workItemId, string tag)
         {
-            await _tools.AddTagAsync(workItemId, tag);
+            await _tools.AddTag(workItemId, tag);
 
             // Replace CreateResponse with a proper HttpResponseMessage creation
             var response = new HttpResponseMessage(HttpStatusCode.OK)

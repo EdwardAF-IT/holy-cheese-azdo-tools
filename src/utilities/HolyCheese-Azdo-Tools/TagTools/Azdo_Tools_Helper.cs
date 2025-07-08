@@ -41,7 +41,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
         /// <summary>
         /// Retrieves current tags on a work item.
         /// </summary>
-        private async Task<(string[] tags, bool hasTagsField)> GetExistingTagsAsync(int workItemId)
+        private async Task<(string[] tags, bool hasTagsField)> GetExistingTags(int workItemId)
         {
             var url = $"https://dev.azure.com/{_org}/_apis/wit/workitems/{workItemId}?api-version=7.0";
             var response = await _client.GetAsync(url);
@@ -77,7 +77,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
         /// <summary>
         /// Updates the tag field of a work item using PATCH operation.
         /// </summary>
-        private async Task PatchTagsAsync(int workItemId, string[] tags, bool hasTagsField)
+        private async Task PatchTags(int workItemId, string[] tags, bool hasTagsField)
         {
             var patch = new[]
             {
@@ -103,11 +103,11 @@ namespace HolyCheese_Azdo_Tools.TagTools
         /// Adds a tag to a work item, avoiding case-insensitive duplicates.
         /// Returns null on success, or an error message string on failure.
         /// </summary>
-        public async Task<string?> AddTagAsync(int workItemId, string tag)
+        public async Task<string?> AddTag(int workItemId, string tag)
         {
             try
             {
-                var (tags, hasTagsField) = await GetExistingTagsAsync(workItemId);
+                var (tags, hasTagsField) = await GetExistingTags(workItemId);
 
                 if (tags.Any(t => t.Equals(tag, StringComparison.OrdinalIgnoreCase)))
                 {
@@ -115,7 +115,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
                     return null;
                 }
 
-                await PatchTagsAsync(workItemId, tags.Append(tag).ToArray(), hasTagsField);
+                await PatchTags(workItemId, tags.Append(tag).ToArray(), hasTagsField);
                 return null;
             }
             catch (HttpRequestException ex)
@@ -139,17 +139,17 @@ namespace HolyCheese_Azdo_Tools.TagTools
         /// Removes a tag from a work item if it exists.
         /// Returns null on success, or an error message string on failure.
         /// </summary>
-        public async Task<string?> RemoveTagAsync(int workItemId, string tag)
+        public async Task<string?> RemoveTag(int workItemId, string tag)
         {
             try
             {
-                var (tags, hasTagsField) = await GetExistingTagsAsync(workItemId);
+                var (tags, hasTagsField) = await GetExistingTags(workItemId);
                 var updatedTags = tags
                     .Where(t => !t.Equals(tag, StringComparison.OrdinalIgnoreCase))
                     .ToArray();
 
                 _log.LogDebug($"Work item {workItemId}: Attempting to remove tag '{tag}'.");
-                await PatchTagsAsync(workItemId, updatedTags, hasTagsField);
+                await PatchTags(workItemId, updatedTags, hasTagsField);
                 return null;
             }
             catch (HttpRequestException ex)

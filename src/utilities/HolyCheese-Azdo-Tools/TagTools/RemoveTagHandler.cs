@@ -27,7 +27,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
             {
                 Content = JsonContent.Create($"Tag '{tag}' removed from work item {workItemId}.")
             };
-            await _tools.RemoveTagAsync(workItemId, tag);
+            await _tools.RemoveTag(workItemId, tag);
             return response;
         }
     }
