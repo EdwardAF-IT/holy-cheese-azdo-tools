@@ -24,4 +24,7 @@
   <ItemGroup>
     <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
+  <Target Name="CheckForUnitTests" BeforeTargets="Build">
+    <Exec Command="powershell -ExecutionPolicy Bypass -File CheckForUnitTests.ps1" />
+  </Target>
 </Project>
