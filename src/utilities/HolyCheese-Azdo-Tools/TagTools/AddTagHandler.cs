@@ -12,9 +12,9 @@ namespace HolyCheese_Azdo_Tools.TagTools
     /// </summary>
     public class AddTagHandler : ITagAction
     {
-        private readonly Azdo_Tools_Helper _tools;
+        private readonly IAzdo_Tools_Helper _tools;
 
-        public AddTagHandler(Azdo_Tools_Helper tools)
+        public AddTagHandler(IAzdo_Tools_Helper tools)
         {
             _tools = tools;
         }
@@ -23,7 +23,6 @@ namespace HolyCheese_Azdo_Tools.TagTools
         {
             await _tools.AddTag(workItemId, tag);
 
-            // Replace CreateResponse with a proper HttpResponseMessage creation
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = JsonContent.Create(new

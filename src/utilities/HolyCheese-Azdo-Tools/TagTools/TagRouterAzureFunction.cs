@@ -1,4 +1,5 @@
 using Azure;
+using Castle.Core.Logging;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,18 +21,21 @@ namespace HolyCheese_Azdo_Tools.TagTools
     /// </summary>
     public class TagRouterAzureFunction
     {
+        private readonly ILogger<TagRouterAzureFunction> _logger;
         private readonly Azdo_Tools_Helper _tools;
-        private readonly AddTagHandler _addHandler;
-        private readonly RemoveTagHandler _removeHandler;
+        private readonly ITagAction _addHandler;
+        private readonly ITagAction _removeHandler;
 
         public TagRouterAzureFunction(
             Azdo_Tools_Helper tools,
-            AddTagHandler addHandler,
-            RemoveTagHandler removeHandler)
+            ITagAction addHandler,
+            ITagAction removeHandler,
+            ILogger<TagRouterAzureFunction> logger)
         {
             _tools = tools;
             _addHandler = addHandler;
             _removeHandler = removeHandler;
+            _logger = logger;
         }
 
         [Function("TagRouter")]
@@ -64,6 +68,14 @@ namespace HolyCheese_Azdo_Tools.TagTools
                 var azdoChangeTagResponse = await handler.ExecuteAsync(azdoChangeTagMessage, workItemId, tag);
 
                 return await SerializeResponseMessage(req, azdoChangeTagResponse);
+            }
+            catch (JsonException ex)
+            {
+                _logger.LogWarning($"Malformed JSON: {ex.Message}");
+
+                response = req.CreateResponse(HttpStatusCode.BadRequest);
+                await response.WriteStringAsync($"Malformed JSON request: {ex.Message}");
+                return response;
             }
             catch (Exception ex)
             {

@@ -2,7 +2,7 @@ namespace HolyCheese_Azdo_Tools.TagTools
 {
 
     /// <summary>
-    /// Interface for tag operations handled by specific strategies.
+    /// ITagDataProvider for tag operations handled by specific strategies.
     /// </summary>
     public interface ITagAction
     {

@@ -14,9 +14,9 @@ namespace HolyCheese_Azdo_Tools.TagTools
     /// </summary>
     public class RemoveTagHandler : ITagAction
     {
-        private readonly Azdo_Tools_Helper _tools;
+        private readonly IAzdo_Tools_Helper _tools;
 
-        public RemoveTagHandler(Azdo_Tools_Helper tools)
+        public RemoveTagHandler(IAzdo_Tools_Helper tools)
         {
             _tools = tools;
         }
@@ -25,7 +25,10 @@ namespace HolyCheese_Azdo_Tools.TagTools
         {
             var response = new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = JsonContent.Create($"Tag '{tag}' removed from work item {workItemId}.")
+                Content = JsonContent.Create(new
+                {
+                    Message = $"Tag '{tag}' removed from work item {workItemId}."
+                })
             };
             await _tools.RemoveTag(workItemId, tag);
             return response;

@@ -15,6 +15,11 @@ Get-ChildItem -Path $sourceDir -Filter *.cs | ForEach-Object {
         $testClassName = "${className}Tests"
         $testFileName = "${testClassName}.cs"
         $testFilePath = Join-Path $testDir $testFileName
+                
+        if (Test-Path $testFilePath) {
+            Write-Host "⏩ Skipped (already exists): $testFileName"
+            return
+        }
 
         $methods = [regex]::Matches($sourceContent, $methodPattern) | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
 
