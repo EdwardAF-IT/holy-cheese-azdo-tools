@@ -48,6 +48,8 @@ namespace HolyCheeseAzdoTools.TagTools
             }
             catch (JsonException ex)
             {
+                // If the response content is malformed or unparseable, treat this as a soft failure.
+                // Returning an empty result allows the system to recover gracefully from transient or schema drift issues.
                 LogJsonError("fetch", workItemId, ex.Message);
                 return (Array.Empty<string>(), false);
             }
@@ -55,8 +57,10 @@ namespace HolyCheeseAzdoTools.TagTools
             // Check whether fields exist and determine tag presence
             if (item?.fields == null)
             {
+                // If the parsed JSON lacks expected structure (e.g., missing 'fields'), treat this as a hard failure.
+                // Throwing ensures contract violations or unexpected API responses aren't silently ignored.
                 _log.LogWarning("Work item {WorkItemId} fetch failed — fields missing.", workItemId);
-                return (Array.Empty<string>(), false);
+                throw new HttpRequestException($"Work item {workItemId} fetch failed: {(int)response.StatusCode} {response.StatusCode}");
             }
 
             bool hasTagsField = item.fields["System.Tags"] != null;

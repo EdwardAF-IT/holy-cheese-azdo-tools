@@ -12,7 +12,7 @@ public class TagDataProviderIntegrationTests
     /// Builds a live TagDataProvider using secrets from Azure Key Vault.
     /// Requires valid DefaultAzureCredential with access to vault: https://holycheese-azdo.vault.azure.net/.
     /// </summary>
-    private async Task<TagDataProvider> CreateLiveProviderAsync()
+    private static async Task<TagDataProvider> CreateLiveProvider()
     {
         var vaultUri = new Uri("https://holycheese-azdo.vault.azure.net/");
         var kvClient = new SecretClient(vaultUri, new DefaultAzureCredential());
@@ -36,9 +36,10 @@ public class TagDataProviderIntegrationTests
     /// Confirms that the response contains expected fields and real data.
     /// </summary>
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetExistingTags_LiveWorkItem_ReturnsTags()
     {
-        var provider = await CreateLiveProviderAsync();
+        var provider = await CreateLiveProvider();
 
         // Call Azure DevOps API using real credentials
         var (tags, hasTagsField) = await provider.GetExistingTags(482);
@@ -53,19 +54,17 @@ public class TagDataProviderIntegrationTests
     /// This confirms PATCH behavior and field-level write access in Azure DevOps.
     /// </summary>
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task PatchTags_LiveWorkItem_AddsNewTag()
     {
-        var provider = await CreateLiveProviderAsync();
+        var provider = await CreateLiveProvider();
 
         // Step 1: Read current tags
         var (existingTags, hasTagsField) = await provider.GetExistingTags(482);
         string tempTag = "integration-test-tag";
 
         // Step 2: Append the temporary tag (avoid duplicates)
-        var updatedTags = existingTags
-            .Append(tempTag)
-            .Distinct()
-            .ToArray();
+        var updatedTags = existingTags.Append(tempTag).Distinct().ToArray();
 
         // Step 3: Patch the work item using the updated tag list
         await provider.PatchTags(482, updatedTags, hasTagsField);
@@ -79,21 +78,26 @@ public class TagDataProviderIntegrationTests
     /// Validates graceful handling when a non-existent work item is queried.
     /// Should throw HttpRequestException due to 404 Not Found.
     /// </summary>
-    [Trait("Category", "Integration")]
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetExistingTags_NonExistentWorkItem_ReturnsError()
     {
-        var provider = await CreateLiveProviderAsync();
-        var ex = await Assert.ThrowsAsync<HttpRequestException>(() => provider.GetExistingTags(999999));
-        Assert.Contains("404", ex.Message); // Error message must include status code
+        var provider = await CreateLiveProvider();
+
+        var ex = await Assert.ThrowsAsync<HttpRequestException>(
+            () => provider.GetExistingTags(999999)
+        );
+
+        // Accept either the numeric status code or its reason phrase for flexibility
+        Assert.Matches("404|NotFound", ex.Message);
     }
 
     /// <summary>
     /// Simulates unauthorized access by using an invalid PAT.
     /// Verifies that auth failure results in a meaningful exception.
     /// </summary>
-    [Trait("Category", "Integration")]
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task PatchTags_UnauthorizedAccess_ThrowsException()
     {
         var client = new HttpClient();
@@ -103,21 +107,21 @@ public class TagDataProviderIntegrationTests
         var provider = new TagDataProvider(client, loggerFactory, "DevOpsOrgName", "invalid-pat");
 
         var ex = await Assert.ThrowsAsync<HttpRequestException>(() =>
-            provider.PatchTags(482, new[] { "auth-failure-tag" }, true)
+            provider.PatchTags(482, ["auth-failure-tag"], true)
         );
 
-        Assert.Contains("401", ex.Message); // Unauthorized status expected
+        Assert.Matches("401|Unauthorized", ex.Message);        // Unauthorized status expected
     }
 
     /// <summary>
     /// Removes the test tag after it has been added.
     /// Ensures the integration test does not leave residual data on work item 482.
     /// </summary>
-    [Trait("Category", "Integration")]
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task PatchTags_RemoveTestTag_CleansUpAfterWrite()
     {
-        var provider = await CreateLiveProviderAsync();
+        var provider = await CreateLiveProvider();
         string cleanupTag = "integration-cleanup-tag";
 
         var (tagsBefore, hasTagsField) = await provider.GetExistingTags(482);
@@ -138,11 +142,11 @@ public class TagDataProviderIntegrationTests
     /// Validates that duplicate tags are filtered during patching.
     /// Ensures the system enforces uniqueness automatically.
     /// </summary>
-    [Trait("Category", "Integration")]
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task PatchTags_DuplicateTags_MaintainsUniqueness()
     {
-        var provider = await CreateLiveProviderAsync();
+        var provider = await CreateLiveProvider();
         string tag = "integration-duplicate-tag";
 
         var (_, hasTagsField) = await provider.GetExistingTags(482);
@@ -161,12 +165,12 @@ public class TagDataProviderIntegrationTests
     /// Confirms parsing behavior when special characters are used in tags.
     /// Validates handling of symbols, punctuation, and edge strings.
     /// </summary>
-    [Trait("Category", "Integration")]
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetExistingTags_MultipleTagsWithSpecialChars_ParsesCorrectly()
     {
-        var provider = await CreateLiveProviderAsync();
-        string[] weirdTags = { "#urgent", "critical@prod", "review-ready!" };
+        var provider = await CreateLiveProvider();
+        string[] weirdTags = ["#urgent", "critical@prod", "review-ready!"];
 
         var (existingTags, hasTagsField) = await provider.GetExistingTags(482);
 
@@ -186,18 +190,18 @@ public class TagDataProviderIntegrationTests
     /// Validates parsing behavior when System.Tags field is explicitly removed.
     /// Confirms fallback to empty array and absence indicator.
     /// </summary>
-    [Trait("Category", "Integration")]
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetExistingTags_FieldMissing_ReturnsFalse()
     {
-        var provider = await CreateLiveProviderAsync();
+        var provider = await CreateLiveProvider();
 
         // Remove System.Tags by patching with an empty array
-        await provider.PatchTags(482, Array.Empty<string>(), true);
+        await provider.PatchTags(482, [], true);
 
         var (tagsAfter, hasField) = await provider.GetExistingTags(482);
 
-        Assert.False(tagsAfter.Any());  // Expect no tags
-        Assert.True(hasField);          // Field exists but is empty
+        Assert.False(tagsAfter.Length != 0);  // Expect no tags
+        Assert.False(hasField);          // Field should be gone if there are no tags
     }
 }
