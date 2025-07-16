@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\HolyCheeseAzdoTools\HolyCheeseAzdoTools.csproj" />
+    <ProjectReference Include="..\..\..\src\utilities\HolyCheeseAzdoTools\HolyCheeseAzdoTools.csproj" />
   </ItemGroup>
 
 </Project>

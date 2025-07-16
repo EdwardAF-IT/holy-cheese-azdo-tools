@@ -6,32 +6,30 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using System.Net.Http.Json;
 
-namespace HolyCheeseAzdoTools.TagTools
+namespace HolyCheeseAzdoTools.TagTools;
+
+/// <summary>
+/// Handles removing a tag from a work item using AzdoToolsHelper.
+/// </summary>
+public class RemoveTagHandler : ITagAction
 {
+    private readonly IAzdoToolsHelper _tools;
 
-    /// <summary>
-    /// Handles removing a tag from a work item using AzdoToolsHelper.
-    /// </summary>
-    public class RemoveTagHandler : ITagAction
+    public RemoveTagHandler(IAzdoToolsHelper tools)
     {
-        private readonly IAzdoToolsHelper _tools;
+        _tools = tools;
+    }
 
-        public RemoveTagHandler(IAzdoToolsHelper tools)
+    public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, int workItemId, string tag)
+    {
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            _tools = tools;
-        }
-
-        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, int workItemId, string tag)
-        {
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            Content = JsonContent.Create(new
             {
-                Content = JsonContent.Create(new
-                {
-                    Message = $"Tag '{tag}' removed from work item {workItemId}."
-                })
-            };
-            await _tools.RemoveTag(workItemId, tag);
-            return response;
-        }
+                Message = $"Tag '{tag}' removed from work item {workItemId}."
+            })
+        };
+        await _tools.RemoveTag(workItemId, tag);
+        return response;
     }
 }

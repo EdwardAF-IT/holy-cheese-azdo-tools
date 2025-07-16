@@ -6,7 +6,8 @@
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>HolyCheese_Azdo_Tools</RootNamespace>
+    <NoWarn>IDE0290</NoWarn>  <!-- Suppress IDE0290: 'Use primary constructor' suggestion. Retaining explicit constructors for clarity and field control. -->
+    <RootNamespace>HolyCheeseAzdoTools</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Title>Holy Cheese Azure DevOps Tools</Title>
   </PropertyGroup>

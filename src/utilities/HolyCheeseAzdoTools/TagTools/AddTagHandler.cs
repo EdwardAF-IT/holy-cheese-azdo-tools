@@ -4,34 +4,33 @@ using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Http.Json;
 
-namespace HolyCheeseAzdoTools.TagTools
+namespace HolyCheeseAzdoTools.TagTools;
+
+
+/// <summary>
+/// Handles adding a tag to a work item using AzdoToolsHelper.
+/// </summary>
+public class AddTagHandler : ITagAction
 {
+    private readonly IAzdoToolsHelper _tools;
 
-    /// <summary>
-    /// Handles adding a tag to a work item using AzdoToolsHelper.
-    /// </summary>
-    public class AddTagHandler : ITagAction
+    public AddTagHandler(IAzdoToolsHelper tools)
     {
-        private readonly IAzdoToolsHelper _tools;
+        _tools = tools;
+    }
 
-        public AddTagHandler(IAzdoToolsHelper tools)
+    public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, int workItemId, string tag)
+    {
+        await _tools.AddTag(workItemId, tag);
+
+        var response = new HttpResponseMessage(HttpStatusCode.OK)
         {
-            _tools = tools;
-        }
-
-        public async Task<HttpResponseMessage> ExecuteAsync(HttpRequestMessage req, int workItemId, string tag)
-        {
-            await _tools.AddTag(workItemId, tag);
-
-            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            Content = JsonContent.Create(new
             {
-                Content = JsonContent.Create(new
-                {
-                    Message = $"Tag '{tag}' added to work item {workItemId}."
-                })
-            };
+                Message = $"Tag '{tag}' added to work item {workItemId}."
+            })
+        };
 
-            return response;
-        }
+        return response;
     }
 }

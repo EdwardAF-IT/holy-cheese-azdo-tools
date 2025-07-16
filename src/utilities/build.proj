@@ -3,9 +3,8 @@
   <PropertyGroup>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <SolutionFile>HolyCheeseAzdoTools.sln</SolutionFile>
-    <TestProject>HolyCheeseAzdoTools.UnitTests/HolyCheeseAzdoTools.UnitTests.csproj</TestProject>
-    <TestFilter></TestFilter>
-    <PowerShellScript>HolyCheeseAzdoTools/CheckForUnitTests.ps1</PowerShellScript>
+    <!-- Combine path to test project relative to build.proj -->
+  <TestProject>$([System.IO.Path]::Combine($(MSBuildThisFileDirectory), "..\..\tests\unit\HolyCheeseAzdoTools.UnitTests\HolyCheeseAzdoTools.UnitTests.csproj"))</TestProject>    <PowerShellScript>HolyCheeseAzdoTools/CheckForUnitTests.ps1</PowerShellScript>
   </PropertyGroup>
 
   <Target Name="Restore">

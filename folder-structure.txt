@@ -1,0 +1,230 @@
+├── .godot
+    ├── editor
+        │   editor_layout.cfg
+        │   filesystem_cache10
+        │   project_metadata.cfg
+        │   script_editor_cache.cfg
+    ├── imported
+        │   azdo-banner.png-7ed4b137b0d281604190fcd05dc6f4ab.ctex
+        │   azdo-banner.png-7ed4b137b0d281604190fcd05dc6f4ab.md5
+        │   azdo-logo.png-886c4b5c10351bc8653f641014a6256a.ctex
+        │   azdo-logo.png-886c4b5c10351bc8653f641014a6256a.md5
+        │   icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex
+        │   icon.svg-218a8f2b3041327d8a5756f3a245f83b.md5
+    ├── mono
+        ├── metadata
+    ├── shader_cache
+        ├── BlitShaderRD
+            ├── d73e865ef14019fa2911f9972cf9fcd778f62c945b516a3a96c41bc02b007586
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── BlurRasterShaderRD
+            ├── fb3311d8bc464ba64130a05ce1fd3b6cf9a8b27144007d8d3803770c7199be92
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── BokehDofRasterShaderRD
+            ├── cb30daa70267da65ef345669348fcc3f9558f48286610ea2632ace531b924abd
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CanvasOcclusionShaderRD
+            ├── dfde862520bf0721c44cd65499b7cd225db7382faf58178bab82d6582aba4bf9
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CanvasSdfShaderRD
+            ├── 31aa88f2dad037ba070bae5a112eeb91c6ead40142fb90f83d1c942c7f974384
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CanvasShaderRD
+            ├── 5dbef7fc80f0ac607fea97298b967936b85b5daec3a4e39249d9776cfd085ec7
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+                │   45fb1ddc6499e56682916a355ce2839e61f42dfe.vulkan.cache
+                │   8a7277c8d3ac029b087c3fa9c55de85560be5119.vulkan.cache
+                │   b585f2cdc5a17ed2e467f8af814098acbdc2006f.vulkan.cache
+                │   c0a681ae42aa3e0b5abba232ccae0b036be455e4.vulkan.cache
+                │   ddbe30d4d1be5d69b00075293fd27da8decd4af2.vulkan.cache
+                │   f3e258e8f7ec2e7e740b62f3bc48ecf5c99fb0db.vulkan.cache
+        ├── CopyShaderRD
+            ├── 0585552a13c4e1fbd943e3d07b01b3c1c9caf202633165c88e1ec49a262f6f93
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CopyToFbShaderRD
+            ├── b1d93669df60c5964e990c8ac52f5e07b301a6182bcac31f48dedf82323db998
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CubemapDownsamplerRasterShaderRD
+            ├── 24961af8352fb81d2122dae1088484f181c4d4074f670e5b87081e44de2b6fcb
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CubemapFilterRasterShaderRD
+            ├── 553b494967b167ef1c475bfaea8557a87b1234232f067ba06dddd763b304f1cb
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CubemapRoughnessRasterShaderRD
+            ├── 79d8835b22c4f39ade45ccbe4c70571c93fa0d753a957d455431b73ab881efe8
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── CubeToDpShaderRD
+            ├── 8a3645d404364d0279e142a90b1a1b56f38c80ad2e7b56fe379b2314a1ac2e4d
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── LuminanceReduceRasterShaderRD
+            ├── a975a753f3bd6713bb8a4f576a6d016ed58af5b79290b9ebaf255e14bebfb5b0
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── MotionVectorsShaderRD
+            ├── 26ac47cc931c6835fac2276d88b1cafff5751417c9ed748866e6de96345ec4f0
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── ParticlesCopyShaderRD
+            ├── 6d4b096b7b43f75f778bc4764d866585f8234b8315acf1debfd80f5607e9c7ce
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── ParticlesShaderRD
+            ├── 2860cdddeb8222ba114256d03b14312eaf3ed3d6c610522e9c7b76920c629452
+                │   f128cab0b22fb7e0d9f023d6cdb81309be392d95.vulkan.cache
+        ├── SceneForwardMobileShaderRD
+            ├── 62145ef1d595860ceb2ea0c8a843d124c5b01f5e97ade5accdf29ddcb60c6d2e
+                │   0f1bcf11b9f7757773a7866f1cd2e297cb2acf5f.vulkan.cache
+                │   218e36a984b0c78c760adc7bcda857a77b17ad85.vulkan.cache
+                │   2b50e38e5fd009c28175cc76423501d3f1de866f.vulkan.cache
+                │   5f3097572932b33c93eebb3c968bad4acf0a97a9.vulkan.cache
+                │   618494189447b24dfbb3e43c9f38e6d9f04604b0.vulkan.cache
+                │   6ee0392e6ccb46d27eb7b08ea14ec6d5cf221168.vulkan.cache
+                │   757ab33d4789b9457fab88a7a982d67d6209d600.vulkan.cache
+                │   7b3dadb0d33a464bbb0a7962224c158af07f1381.vulkan.cache
+                │   7fb66440f65dac23b75016fc52fb82ae26e9393f.vulkan.cache
+                │   86e1b93c3d7bd17d2e21c13871086aa19aa333e7.vulkan.cache
+                │   964e2bf8e1eed26e7e9ed4b223d256b6a0bda12a.vulkan.cache
+                │   9f9294903cdaab4eeb10f39defaee7f48b9ad675.vulkan.cache
+                │   a6d99b637dfee75712ae57f13dc63ae39e299a45.vulkan.cache
+                │   ab60f8b228c0dad11d9d882c2ab4f61eb6ca2f20.vulkan.cache
+                │   b396ad98c064d54194bbfe9f2c4d30adaaa1f6af.vulkan.cache
+                │   b7b2f398c116e26c751517dd8d44535f700f825f.vulkan.cache
+                │   bb38165ecd6242eb97573e5f293c2d3c40d25eee.vulkan.cache
+                │   c4c828897f8a3fe72e3713d35b4ba452d7ed9acf.vulkan.cache
+                │   c911b2eb203b7525047b1fc26929407fb3d4191d.vulkan.cache
+        ├── ShadowFrustumShaderRD
+            ├── e957a1f1de02c89a5ad5e1f94ecd26ff29154cddf53aeef56ddbd96e2e4703fb
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── SkeletonShaderRD
+            ├── ea6a31297ecd2d7c45249f09fa14bdfbb28a8d9ac22276be7927ab5c9a0d957d
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── SkyShaderRD
+            ├── 8a5a1a07228c4198487f2f5734dcc6f0fdd1479521a6b77fa968e23f465dcad1
+                │   03e3b11c69e24394b2d955a8c0ba85587bb70839.vulkan.cache
+                │   0a0fb987bd6ede673a5edeb59834f887758ae2a6.vulkan.cache
+                │   301c34f080b0d9fb9ff1c17636ea175173a43e1c.vulkan.cache
+                │   de678811d1bad3cad4892a8db7b6ea0be197d51d.vulkan.cache
+        ├── SortShaderRD
+            ├── f0334d42aa0627f32dbe7f9cc5d74d5f7d6f729311c6b3938b5df597ff02abda
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── SpecularMergeShaderRD
+            ├── a35ec916d4589dcd48a7413e9fae4dd9f75931af94d9500df6828687787b564e
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── TonemapShaderRD
+            ├── 69b2ec2026e8852eb94cb4b9a2852ec0c93d6c5600a2587378c92e463650fc23
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+        ├── VrsShaderRD
+            ├── 3ad4f6c2c575a19296dcfca49a75f1e7fad40edf9e2e10517705cc47b686205c
+                │   087916079fba7c625e62b0c2cca570e0fb87c99a.vulkan.cache
+    │   .gdignore
+    │   extension_list.cfg
+    │   global_script_class_cache.cfg
+    │   uid_cache.bin
+├── addons
+    ├── godot-git-plugin
+        ├── win64
+            │   libgit_plugin.windows.editor.x86_64.dll
+            │   libgit_plugin.windows.editor.x86_64.exp
+            │   libgit_plugin.windows.editor.x86_64.lib
+        │   git_plugin.gdextension
+        │   git_plugin.gdextension.uid
+        │   LICENSE
+        │   plugin.cfg
+        │   THIRDPARTY.md
+├── assets
+├── Docs
+    │   story board.docx
+    │   Video Game Document.docx
+├── project
+    │   azdo-banner.png
+    │   azdo-logo-admin.png
+    │   azdo-logo-dev.png
+    │   azdo-logo-game-design.png
+    │   azdo-logo-graphics.png
+    │   azdo-logo-marketing.png
+    │   azdo-logo-qa.png
+    │   azdo-logo-small.jpg
+    │   azdo-logo-sounds.png
+    │   azdo-logo.png
+    │   Basic task breakdown.txt
+    │   initial-wbs.xlsx
+├── src
+    ├── utilities
+        ├── HolyCheeseAzdoTools
+            ├── Properties
+                ├── PublishProfiles
+                    │   HolyCheese-Azdo-Tools - Web Deploy.pubxml.user
+                    │   HolyCheese-Azdo-Tools - Zip Deploy.pubxml.user
+                ├── ServiceDependencies
+                    ├── HolyCheese-Azdo-Tools - Web Deploy
+                        │   profile.arm.json
+                    ├── HolyCheese-Azdo-Tools - Zip Deploy
+                        │   appInsights2.arm.json
+                        │   profile.arm.json
+                        │   storage1.arm.json
+                │   launchSettings.json
+                │   serviceDependencies.HolyCheese-Azdo-Tools - Web Deploy.json
+                │   serviceDependencies.HolyCheese-Azdo-Tools - Web Deploy.json.user
+                │   serviceDependencies.HolyCheese-Azdo-Tools - Zip Deploy.json
+                │   serviceDependencies.HolyCheese-Azdo-Tools - Zip Deploy.json.user
+                │   serviceDependencies.json
+                │   serviceDependencies.local.json
+                │   serviceDependencies.local.json.user
+            ├── TagTools
+                │   AddTagHandler.cs
+                │   AzdoToolsHelper.cs
+                │   IAzdoToolsHelper.cs
+                │   ITagAction.cs
+                │   ITagDataProvider.cs
+                │   RemoveTagHandler.cs
+                │   TagDataProvider.cs
+                │   TagRouterAzureFunction.cs
+            │   CheckForUnitTests.ps1
+            │   HolyCheeseAzdoTools.csproj
+            │   HolyCheeseAzdoTools.csproj.user
+            │   HolyCheeseAzdoTools.lutconfig
+            │   host.json
+            │   LiveTest.runsettings
+            │   local.settings.json
+            │   Program.cs
+        ├── HolyCheeseAzdoTools.IntegrationTests
+        ├── HolyCheeseAzdoTools.UnitTests
+            ├── TagTools
+                │   AddTagHandler_UnitTests.cs
+                │   AzdoToolsHelper_UnitTests.cs
+                │   RemoveTagHandler_UnitTests.cs
+                │   TagDataProvider_UnitTests.cs
+                │   TagRouterAzureFunction_UnitTests.cs
+        │   .gitignore
+        │   build.proj
+        │   folder-structure.txt
+        │   HolyCheeseAzdoTools.sln
+├── tests
+    ├── integration
+        ├── HolyCheeseAzdoTools.IntegrationTests
+            ├── TagTools
+                │   TagDataProviderIntegrationTests.cs
+            │   HolyCheeseAzdoTools.IntegrationTests.csproj
+    ├── unit
+        ├── HolyCheeseAzdoTools.UnitTests
+            ├── Common
+                │   MockHttpMessageHandler.cs
+                │   NullLogger.cs
+                │   NullLoggerProvider.cs
+                │   StubHttpRequestData.cs
+                │   TagPayloads.cs
+                │   TagResponse.cs
+                │   TestHttpResponseData.cs
+                │   TestTagDataProvider.cs
+            ├── TagTools
+                │   AddTagHandler_UnitTests.cs
+                │   AzdoToolsHelper_UnitTests.cs
+                │   RemoveTagHandler_UnitTests.cs
+                │   TagDataProvider_UnitTests.cs
+                │   TagRouterAzureFunction_UnitTests.cs
+            │   HolyCheeseAzdoTools.UnitTests.csproj
+│   .editorconfig
+│   .gitattributes
+│   .gitignore
+│   icon.svg
+│   icon.svg.import
+│   project.godot
+│   ProjectIdeasVote.xlsx
+│   README.md

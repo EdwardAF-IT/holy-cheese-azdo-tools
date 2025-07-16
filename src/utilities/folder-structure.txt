@@ -1,0 +1,48 @@
+├── HolyCheeseAzdoTools
+    ├── Properties
+        ├── PublishProfiles
+            │   HolyCheese-Azdo-Tools - Web Deploy.pubxml.user
+            │   HolyCheese-Azdo-Tools - Zip Deploy.pubxml.user
+        ├── ServiceDependencies
+            ├── HolyCheese-Azdo-Tools - Web Deploy
+                │   profile.arm.json
+            ├── HolyCheese-Azdo-Tools - Zip Deploy
+                │   appInsights2.arm.json
+                │   profile.arm.json
+                │   storage1.arm.json
+        │   launchSettings.json
+        │   serviceDependencies.HolyCheese-Azdo-Tools - Web Deploy.json
+        │   serviceDependencies.HolyCheese-Azdo-Tools - Web Deploy.json.user
+        │   serviceDependencies.HolyCheese-Azdo-Tools - Zip Deploy.json
+        │   serviceDependencies.HolyCheese-Azdo-Tools - Zip Deploy.json.user
+        │   serviceDependencies.json
+        │   serviceDependencies.local.json
+        │   serviceDependencies.local.json.user
+    ├── TagTools
+        │   AddTagHandler.cs
+        │   AzdoToolsHelper.cs
+        │   IAzdoToolsHelper.cs
+        │   ITagAction.cs
+        │   ITagDataProvider.cs
+        │   RemoveTagHandler.cs
+        │   TagDataProvider.cs
+        │   TagRouterAzureFunction.cs
+    │   CheckForUnitTests.ps1
+    │   HolyCheeseAzdoTools.csproj
+    │   HolyCheeseAzdoTools.csproj.user
+    │   HolyCheeseAzdoTools.lutconfig
+    │   host.json
+    │   LiveTest.runsettings
+    │   local.settings.json
+    │   Program.cs
+├── HolyCheeseAzdoTools.IntegrationTests
+├── HolyCheeseAzdoTools.UnitTests
+    ├── TagTools
+        │   AddTagHandler_UnitTests.cs
+        │   AzdoToolsHelper_UnitTests.cs
+        │   RemoveTagHandler_UnitTests.cs
+        │   TagDataProvider_UnitTests.cs
+        │   TagRouterAzureFunction_UnitTests.cs
+│   .gitignore
+│   build.proj
+│   HolyCheeseAzdoTools.sln
