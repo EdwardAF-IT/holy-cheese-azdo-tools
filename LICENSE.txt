@@ -1,0 +1,6 @@
+Holy Cheese Proprietary License
+
+This software is proprietary and confidential.
+Unauthorized copying, distribution, or use is strictly prohibited.
+
+Copyright (c) 2025, TechWave LLC.

@@ -1,0 +1,14 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.vs/
+
+# MSBuild
+*.proj.user
+*.cache
+*.log
+
+# VS Code
+.vscode/
