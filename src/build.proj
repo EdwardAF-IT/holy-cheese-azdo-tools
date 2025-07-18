@@ -1,0 +1,33 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="BuildAndTest">
+
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <SolutionFile>HolyCheeseAzdoTools.sln</SolutionFile>
+    <PowerShellScript>HolyCheeseAzdoTools\CheckForUnitTests.ps1</PowerShellScript>
+    <!-- Combine path to test project relative to build.proj -->
+    <TestProject>$([System.IO.Path]::Combine($(MSBuildThisFileDirectory), "..\tests\unit\HolyCheeseAzdoTools.UnitTests\HolyCheeseAzdoTools.UnitTests.csproj"))</TestProject>
+  </PropertyGroup>
+
+  <Target Name="Restore">
+    <Message Text="Restoring packages for $(SolutionFile)" Importance="High" />
+    <Exec Command="dotnet restore $(SolutionFile)" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="Restore">
+    <Message Text="Building solution: $(SolutionFile)" Importance="High" />
+    <Exec Command="dotnet build $(SolutionFile) -c $(Configuration)" />
+  </Target>
+
+  <Target Name="RunTestSetup" DependsOnTargets="Build">
+    <Message Text="Running PowerShell script: $(PowerShellScript)" Importance="High" />
+    <Exec Command="powershell -ExecutionPolicy Bypass -File $(PowerShellScript)" />
+  </Target>
+
+  <Target Name="RunUnitTests" DependsOnTargets="RunTestSetup">
+    <Message Text="Running tests from: $(TestProject) with filter '$(TestFilter)'" Importance="High" />
+    <Exec Command="dotnet test $(TestProject) -c $(Configuration) --filter &quot;$(TestFilter)&quot; --verbosity minimal" />
+  </Target>
+
+  <Target Name="BuildAndTest" DependsOnTargets="RunUnitTests" />
+
+</Project>
