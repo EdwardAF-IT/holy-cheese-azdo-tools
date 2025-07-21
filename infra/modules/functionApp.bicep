@@ -3,6 +3,7 @@ param location string
 param hostingPlanName string
 param insightsId string
 param storageAccountName string
+param tags object
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' existing = {
   name: hostingPlanName
@@ -28,4 +29,5 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
       ]
     }
   }
+  tags: tags
 }

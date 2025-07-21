@@ -1,5 +1,6 @@
 param storageName string
 param location string
+param tags object
 
 resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   name: storageName
@@ -16,4 +17,5 @@ resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
       keySource: 'Microsoft.Storage'
     }
   }
+  tags: tags
 }

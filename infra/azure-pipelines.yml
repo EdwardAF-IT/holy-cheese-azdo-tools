@@ -9,26 +9,43 @@ parameters:
     default:
       dev:
         location: 'centralus'
-        resourceGroup: 'HolyCheese-RG'
+        resourceGroup: 'AzdoTools-RG-Dev'
+      test:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Test'
+  - name: sharedResourceGroup
+    type: string
+    default: 'AzdoTools-RG-Shared'
 
 stages:
-  # Static infra provision stage
-  - stage: InfraProvision
-    displayName: 'Infra Loop Delegate'
+  # Provision the shared infrastructure
+  - stage: ProvisionShared
+    displayName: 'Provision Shared Infrastructure'
     jobs:
-    - template: ../infra/pipelines/infra-provision-loop.yml
-      parameters:
-        environmentName: 'dev'
-        location: 'centralus'
-        resourceGroup: 'HolyCheese-RG'
+    - job: DeploySharedInfra
+      displayName: 'Deploy Shared Resources'
+      pool:
+        vmImage: 'ubuntu-latest'
+      steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            az deployment sub create \
+              --location centralus \
+              --template-file infra/shared-infrastructure.bicep \
+              --parameters @infra/shared-parameters.bicepparam
 
-  # Loop over dynamic environments
+    # Provision each individual environment according to how its files are defined
   - ${{ each env in parameters.environments }}:
     - stage: Deploy_${{ env.key }}
       displayName: 'Deploy to ${{ env.key }}'
       jobs:
       - template: pipelines/templates/deploy-environment.yml
         parameters:
+          appName: 'AzdoTools'
           environmentName: ${{ env.key }}
           location: ${{ env.value.location }}
           resourceGroup: ${{ env.value.resourceGroup }}

@@ -1,5 +1,6 @@
 param insightsName string
 param location string
+param tags object
 
 resource appInsights 'microsoft.insights/components@2020-02-02' = {
   name: insightsName
@@ -9,4 +10,5 @@ resource appInsights 'microsoft.insights/components@2020-02-02' = {
     Application_Type: 'web'
     RetentionInDays: 90
   }
+  tags: tags
 }

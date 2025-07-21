@@ -2,16 +2,15 @@ param location string
 param appName string
 param environmentName string
 
-var prefix = '${appName}-${environmentName}'
-
-// Application Insights
-module insights './modules/appInsights.bicep' = {
-  name: '${prefix}-insights'
-  params: {
-    insightsName: '${prefix}-insights'
-    location: location
-  }
+var tags = {
+  App: appName
+  Environment: environmentName
+  Owner: 'Edward'
 }
+
+var prefix = '${appName}-${environmentName}'
+var sharedInsightsId = '/subscriptions/<SUB_ID>/resourceGroups/AzdoTools-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
+var sharedHostingPlanName = 'AzdoTools-AppServicePlan-Shared'
 
 // Key Vault
 module kv './modules/keyVault.bicep' = {
@@ -19,6 +18,7 @@ module kv './modules/keyVault.bicep' = {
   params: {
     kvName: '${prefix}-kv'
     location: location
+    tags: tags
   }
 }
 
@@ -28,6 +28,7 @@ module storage './modules/storage.bicep' = {
   params: {
     storageName: toLower('${prefix}storage')
     location: location
+    tags: tags
   }
 }
 
@@ -37,8 +38,9 @@ module fnapp './modules/functionApp.bicep' = {
   params: {
     appName: prefix
     location: location
-    hostingPlanName: 'ASP-${prefix}'
-    insightsId: insights.outputs.insightsId
+    hostingPlanName: sharedHostingPlanName
+    insightsId: sharedInsightsId
     storageAccountName: storage.outputs.storageName
+    tags: tags
   }
 }
