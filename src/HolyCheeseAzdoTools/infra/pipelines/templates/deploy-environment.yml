@@ -1,4 +1,6 @@
 parameters:
+  - name: appName
+    type: string
   - name: environmentName
     type: string
   - name: location
@@ -17,9 +19,12 @@ jobs:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          echo "Deploying '${{ parameters.environmentName }}' declaratively..."
+          echo "Deploying '${{ parameters.appName }}-${{ parameters.environmentName }}' declaratively..."
           az deployment sub create \
             --location ${{ parameters.location }} \
             --template-file infra/deploy-environment.bicep \
-            --parameters environmentName=${{ parameters.environmentName }} location=${{ parameters.location }}
+            --parameters \
+              appName=${{ parameters.appName }} \
+              environmentName=${{ parameters.environmentName }} \
+              location=${{ parameters.location }}
       displayName: 'Deploy Subscription-Level Bicep'

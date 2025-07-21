@@ -4,20 +4,27 @@ trigger:
       - main
 
 parameters:
+  - name: appName
+    type: string
+    default: 'AzdoTools'
   - name: environments
     type: object
     default:
       dev:
         location: 'centralus'
-        resourceGroup: 'HolyCheese-RG'
+        resourceGroup: 'AzdoTools-RG-Dev'
+      staging:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Test'
 
 stages:
 - ${{ each env in parameters.environments }}:
   - stage: Deploy_${{ env.key }}
-    displayName: 'Deploy to ${{ env.key }}'
+    displayName: 'Deploy ${{ parameters.appName }} to ${{ env.key }}'
     jobs:
     - template: pipelines/templates/deploy-environment.yml
       parameters:
+        appName: ${{ parameters.appName }}
         environmentName: ${{ env.key }}
         location: ${{ env.value.location }}
         resourceGroup: ${{ env.value.resourceGroup }}

@@ -1,0 +1,247 @@
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\azure-pipelines.yml:
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: environments
+    type: object
+    default:
+      dev:
+        location: 'centralus'
+        resourceGroup: 'HolyCheese-RG'
+
+stages:
+  # Static infra provision stage
+  - stage: InfraProvision
+    displayName: 'Infra Loop Delegate'
+    jobs:
+    - template: ../infra/pipelines/infra-provision-loop.yml
+      parameters:
+        environmentName: 'dev'
+        location: 'centralus'
+        resourceGroup: 'HolyCheese-RG'
+
+  # Loop over dynamic environments
+  - ${{ each env in parameters.environments }}:
+    - stage: Deploy_${{ env.key }}
+      displayName: 'Deploy to ${{ env.key }}'
+      jobs:
+      - template: pipelines/templates/deploy-environment.yml
+        parameters:
+          environmentName: ${{ env.key }}
+          location: ${{ env.value.location }}
+          resourceGroup: ${{ env.value.resourceGroup }}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\deploy-environment.bicep:
+param environmentName string
+param appName string
+param location string = 'centralus'
+
+var resourceGroupName = 'hc-${appName}-${environmentName}-rg'
+
+resource rg 'Microsoft.Resources/resourceGroups@2021-04-01' = {
+  name: resourceGroupName
+  location: location
+}
+
+module appInfra './environments/${appName}-${environmentName}.bicep' = {
+  name: '${appName}-${environmentName}-deploy'
+  scope: rg
+  params: {
+    location: location
+    appName: appName
+    environmentName: environmentName
+  }
+}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\environments\AzdoTools-dev.bicep:
+param location string
+param appName string
+param environmentName string
+
+var prefix = '${appName}-${environmentName}'
+
+// Application Insights
+module insights './modules/appInsights.bicep' = {
+  name: '${prefix}-insights'
+  params: {
+    insightsName: '${prefix}-insights'
+    location: location
+  }
+}
+
+// Key Vault
+module kv './modules/keyVault.bicep' = {
+  name: '${prefix}-kv'
+  params: {
+    kvName: '${prefix}-kv'
+    location: location
+  }
+}
+
+// Storage Account
+module storage './modules/storage.bicep' = {
+  name: '${prefix}-storage'
+  params: {
+    storageName: toLower('${appName}storage')
+    location: location
+  }
+}
+
+// Function App
+module fnapp './modules/functionApp.bicep' = {
+  name: '${prefix}-fnapp'
+  params: {
+    appName: prefix
+    location: location
+    hostingPlanName: 'ASP-HolyCheeseRG-b5e1'
+    insightsId: insights.outputs.insightsId
+    storageAccountName: storage.outputs.storageName
+  }
+}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\modules\appInsights.bicep:
+param insightsName string
+param location string
+
+resource appInsights 'microsoft.insights/components@2020-02-02' = {
+  name: insightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    RetentionInDays: 90
+  }
+}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\modules\functionApp.bicep:
+param appName string
+param location string
+param hostingPlanName string
+param insightsId string
+param storageAccountName string
+
+resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' existing = {
+  name: hostingPlanName
+}
+
+resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
+  name: appName
+  location: location
+  kind: 'functionapp'
+  identity: { type: 'SystemAssigned' }
+  properties: {
+    serverFarmId: hostingPlan.id
+    siteConfig: {
+      appSettings: [
+        {
+          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
+          value: insightsId
+        }
+        {
+          name: 'AzureWebJobsStorage'
+          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};...'
+        }
+      ]
+    }
+  }
+}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\modules\keyVault.bicep:
+param kvName string
+param location string
+
+resource keyVault 'Microsoft.KeyVault/vaults@2024-12-01-preview' = {
+  name: kvName
+  location: location
+  properties: {
+    sku: { name: 'Standard'; family: 'A' }
+    enableRbacAuthorization: true
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\modules\storage.bicep:
+param storageName string
+param location string
+
+resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
+  name: storageName
+  location: location
+  sku: { name: 'Standard_LRS'; tier: 'Standard' }
+  kind: 'Storage'
+  properties: {
+    supportsHttpsTrafficOnly: true
+    encryption: {
+      services: {
+        blob: { enabled: true; keyType: 'Account' }
+        file: { enabled: true; keyType: 'Account' }
+      }
+      keySource: 'Microsoft.Storage'
+    }
+  }
+}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\pipelines\infra-provision-loop.yml:
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: environments
+    type: object
+    default:
+      dev:
+        location: 'centralus'
+        resourceGroup: 'HolyCheese-RG'
+
+stages:
+- ${{ each env in parameters.environments }}:
+  - stage: Deploy_${{ env.key }}
+    displayName: 'Deploy to ${{ env.key }}'
+    jobs:
+    - template: pipelines/templates/deploy-environment.yml
+      parameters:
+        environmentName: ${{ env.key }}
+        location: ${{ env.value.location }}
+        resourceGroup: ${{ env.value.resourceGroup }}
+
+
+C:\Code\holy-cheese\holy-cheese-azdo-tools\src\HolyCheeseAzdoTools\infra\pipelines\templates\deploy-environment.yml:
+parameters:
+  - name: environmentName
+    type: string
+  - name: location
+    type: string
+    default: 'centralus'
+
+jobs:
+- job: DeployInfra
+  displayName: 'Provision Subscription-Level Environment'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Deploying '${{ parameters.environmentName }}' declaratively..."
+          az deployment sub create \
+            --location ${{ parameters.location }} \
+            --template-file infra/deploy-environment.bicep \
+            --parameters environmentName=${{ parameters.environmentName }} location=${{ parameters.location }}
+      displayName: 'Deploy Subscription-Level Bicep'
+
