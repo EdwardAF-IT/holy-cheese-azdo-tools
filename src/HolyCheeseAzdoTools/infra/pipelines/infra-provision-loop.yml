@@ -1,0 +1,23 @@
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: environments
+    type: object
+    default:
+      dev:
+        location: 'centralus'
+        resourceGroup: 'HolyCheese-RG'
+
+stages:
+- ${{ each env in parameters.environments }}:
+  - stage: Deploy_${{ env.key }}
+    displayName: 'Deploy to ${{ env.key }}'
+    jobs:
+    - template: pipelines/templates/deploy-environment.yml
+      parameters:
+        environmentName: ${{ env.key }}
+        location: ${{ env.value.location }}
+        resourceGroup: ${{ env.value.resourceGroup }}

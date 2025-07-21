@@ -6,7 +6,7 @@ using HolyCheeseAzdoTools.TagTools;
 
 namespace HolyCheeseAzdoTools.IntegrationTests.TagTools;
 
-public class TagDataProviderIntegrationTests
+public class TagDataProvider_IntegrationTests
 {
     /// <summary>
     /// Builds a live TagDataProvider using secrets from Azure Key Vault.

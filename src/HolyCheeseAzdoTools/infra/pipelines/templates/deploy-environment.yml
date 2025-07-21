@@ -1,0 +1,25 @@
+parameters:
+  - name: environmentName
+    type: string
+  - name: location
+    type: string
+    default: 'centralus'
+
+jobs:
+- job: DeployInfra
+  displayName: 'Provision Subscription-Level Environment'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Deploying '${{ parameters.environmentName }}' declaratively..."
+          az deployment sub create \
+            --location ${{ parameters.location }} \
+            --template-file infra/deploy-environment.bicep \
+            --parameters environmentName=${{ parameters.environmentName }} location=${{ parameters.location }}
+      displayName: 'Deploy Subscription-Level Bicep'
