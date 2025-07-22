@@ -1,6 +1,7 @@
 param location string
 param appName string
 param environmentName string
+param subscriptionId string
 
 var tags = {
   App: appName
@@ -9,7 +10,7 @@ var tags = {
 }
 
 var prefix = '${appName}-${environmentName}'
-var sharedInsightsId = '/subscriptions/<SUB_ID>/resourceGroups/AzdoTools-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
+var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/AzdoTools-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
 var sharedHostingPlanName = 'AzdoTools-AppServicePlan-Shared'
 
 // Key Vault

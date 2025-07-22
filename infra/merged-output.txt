@@ -18,14 +18,21 @@ parameters:
     type: string
     default: 'AzdoTools-RG-Shared'
 
+variables:
+  useHostedAgent: false # set to true to try hosted
+  agentPoolName: ${{ if eq(variables.useHostedAgent, true) }}: HostedAgent
+                  ${{ if eq(variables.useHostedAgent, false) }}: LocalPool
+
 stages:
-  # Provision the shared infrastructure
-  - stage: ProvisionShared
-    displayName: 'Provision Shared Infrastructure'
+  # 🧭 Try hosted agent first if requested
+  - stage: TryHostedShared
+    displayName: 'Try Shared Infra on Hosted Agent'
+    condition: eq(variables.agentPoolName, 'HostedAgent')
     jobs:
-    - job: DeploySharedInfra
-      displayName: 'Deploy Shared Resources'
+    - job: DeploySharedHosted
+      displayName: 'Deploy Shared Resources via Hosted Agent'
       pool:
+        name: HostedAgent
         vmImage: 'ubuntu-latest'
       steps:
       - task: AzureCLI@2
@@ -34,15 +41,69 @@ stages:
           scriptType: bash
           scriptLocation: inlineScript
           inlineScript: |
+            echo "Deploying shared infra via HostedAgent..."
             az deployment sub create \
               --location centralus \
               --template-file infra/shared-infrastructure.bicep \
               --parameters @infra/shared-parameters.bicepparam
 
-    # Provision each individual environment according to how its files are defined
+  # 🔁 Fallback if hosted fails
+  - stage: FallbackSharedLocal
+    displayName: 'Fallback to Local Agent for Shared Infra'
+    condition: and(eq(variables.agentPoolName, 'HostedAgent'), failed())
+    jobs:
+    - job: DeploySharedLocalFallback
+      displayName: 'Deploy Shared Resources via Local Agent (Fallback)'
+      pool:
+        name: LocalPool
+      steps:
+      - bash: echo "Fallback triggered" && echo "##vso[task.setvariable variable=sharedAgentFallback;isOutput=true]true"
+        displayName: 'Mark Fallback Active'
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            echo "Fallback: deploying shared infra via LocalPool..."
+            az deployment sub create \
+              --location centralus \
+              --template-file infra/shared-infrastructure.bicep \
+              --parameters @infra/shared-parameters.bicepparam
+
+  # 🧱 Direct use of LocalPool (if hosted not requested)
+  - stage: ProvisionShared
+    displayName: 'Provision Shared Infrastructure (LocalPool)'
+    condition: ne(variables.agentPoolName, 'HostedAgent')
+    jobs:
+    - job: DeploySharedInfra
+      displayName: 'Deploy Shared Resources'
+      pool:
+        name: ${{ variables.agentPoolName }}
+        vmImage: 'ubuntu-latest'
+      steps:
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            echo "Deploying shared infra via LocalPool..."
+            az deployment sub create \
+              --location centralus \
+              --template-file infra/shared-infrastructure.bicep \
+              --parameters @infra/shared-parameters.bicepparam
+
+  # 🚀 Deploy each environment (after shared infra)
   - ${{ each env in parameters.environments }}:
     - stage: Deploy_${{ env.key }}
       displayName: 'Deploy to ${{ env.key }}'
+      dependsOn:
+        - TryHostedShared
+        - FallbackSharedLocal
+        - ProvisionShared
+      variables:
+        sharedAgentFallback: $[stageDependencies.FallbackSharedLocal.DeploySharedLocalFallback.outputs['sharedAgentFallback']]
       jobs:
       - template: pipelines/templates/deploy-environment.yml
         parameters:
@@ -50,6 +111,7 @@ stages:
           environmentName: ${{ env.key }}
           location: ${{ env.value.location }}
           resourceGroup: ${{ env.value.resourceGroup }}
+          agentPoolName: ${{ variables.agentPoolName }}
 
 
 C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\deploy-environment.bicep:
@@ -205,157 +267,3 @@ module fnapp './modules/functionApp.bicep' = {
     tags: tags
   }
 }
-
-
-C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\modules\appInsights.bicep:
-param insightsName string
-param location string
-
-resource appInsights 'microsoft.insights/components@2020-02-02' = {
-  name: insightsName
-  location: location
-  kind: 'web'
-  properties: {
-    Application_Type: 'web'
-    RetentionInDays: 90
-  }
-}
-
-
-C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\modules\functionApp.bicep:
-param appName string
-param location string
-param hostingPlanName string
-param insightsId string
-param storageAccountName string
-
-resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' existing = {
-  name: hostingPlanName
-}
-
-resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
-  name: appName
-  location: location
-  kind: 'functionapp'
-  identity: { type: 'SystemAssigned' }
-  properties: {
-    serverFarmId: hostingPlan.id
-    siteConfig: {
-      appSettings: [
-        {
-          name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
-          value: insightsId
-        }
-        {
-          name: 'AzureWebJobsStorage'
-          value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};...'
-        }
-      ]
-    }
-  }
-}
-
-
-C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\modules\keyVault.bicep:
-param kvName string
-param location string
-
-resource keyVault 'Microsoft.KeyVault/vaults@2024-12-01-preview' = {
-  name: kvName
-  location: location
-  properties: {
-    sku: { name: 'Standard'; family: 'A' }
-    enableRbacAuthorization: true
-    publicNetworkAccess: 'Enabled'
-  }
-}
-
-
-C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\modules\storage.bicep:
-param storageName string
-param location string
-
-resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
-  name: storageName
-  location: location
-  sku: { name: 'Standard_LRS'; tier: 'Standard' }
-  kind: 'Storage'
-  properties: {
-    supportsHttpsTrafficOnly: true
-    encryption: {
-      services: {
-        blob: { enabled: true; keyType: 'Account' }
-        file: { enabled: true; keyType: 'Account' }
-      }
-      keySource: 'Microsoft.Storage'
-    }
-  }
-}
-
-
-C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\pipelines\infra-provision-loop.yml:
-trigger:
-  branches:
-    include:
-      - main
-
-parameters:
-  - name: appName
-    type: string
-    default: 'AzdoTools'
-  - name: environments
-    type: object
-    default:
-      dev:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Dev'
-      staging:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Test'
-
-stages:
-- ${{ each env in parameters.environments }}:
-  - stage: Deploy_${{ env.key }}
-    displayName: 'Deploy ${{ parameters.appName }} to ${{ env.key }}'
-    jobs:
-    - template: pipelines/templates/deploy-environment.yml
-      parameters:
-        appName: ${{ parameters.appName }}
-        environmentName: ${{ env.key }}
-        location: ${{ env.value.location }}
-        resourceGroup: ${{ env.value.resourceGroup }}
-
-
-C:\Code\holy-cheese\holy-cheese-azdo-tools\infra\pipelines\templates\deploy-environment.yml:
-parameters:
-  - name: appName
-    type: string
-  - name: environmentName
-    type: string
-  - name: location
-    type: string
-    default: 'centralus'
-  - name: resourceGroup
-    type: string
-
-jobs:
-- job: DeployInfra
-  displayName: 'Provision Environment'
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          az deployment sub create \
-            --location ${{ parameters.location }} \
-            --template-file infra/deploy-environment.bicep \
-            --parameters \
-              appName=${{ parameters.appName }} \
-              environmentName=${{ parameters.environmentName }} \
-              location=${{ parameters.location }}
-      displayName: 'Deploy Environment Bicep'
-

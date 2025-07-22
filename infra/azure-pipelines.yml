@@ -17,16 +17,94 @@ parameters:
     type: string
     default: 'AzdoTools-RG-Shared'
 
+variables:
+  useHostedAgent: false  # Set to true to use hosted agents; false for local pool
+  agentPoolName: ${{ if eq(variables.useHostedAgent, true) }}: HostedAgent
+                 ${{ if eq(variables.useHostedAgent, false) }}: LocalPool
+  subscriptionId: 42a2eb5c-8d13-451c-8b50-069e05cdbf86 
+
+# Try hosted for shared infrustructure
 stages:
-  # Provision the shared infrastructure
-  - stage: ProvisionShared
-    displayName: 'Provision Shared Infrastructure'
+- stage: TryHostedShared
+  condition: eq(variables.agentPoolName, 'HostedAgent')
+  jobs:
+  - job: DeploySharedHosted
+    pool:
+      name: HostedAgent
+      vmImage: 'ubuntu-latest'
+    steps:
+    - bash: echo "Using agent: $(Agent.Name)"
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Deploying shared infra via HostedAgent..."
+          az deployment sub create \
+            --location centralus \
+            --template-file infra/shared-infrastructure.bicep \
+            --parameters @infra/shared-parameters.bicepparam \
+                         subscriptionId=${{ variables.subscriptionId }}
+
+# Fallback for shared infrastructure
+- stage: FallbackSharedLocal
+  condition: and(eq(variables.agentPoolName, 'HostedAgent'), failed())
+  jobs:
+  - job: DeploySharedLocalFallback
+    pool:
+      name: LocalPool
+    steps:
+    - bash: |
+        echo "Fallback triggered"
+        echo "##vso[task.setvariable variable=sharedAgentFallback;isOutput=true]true"
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment sub create \
+            --location centralus \
+            --template-file infra/shared-infrastructure.bicep \
+            --parameters @infra/shared-parameters.bicepparam \
+                         subscriptionId=${{ variables.subscriptionId }}
+
+# Local-only shared infrustructure
+- stage: ProvisionShared
+  condition: ne(variables.agentPoolName, 'HostedAgent')
+  jobs:
+  - job: DeploySharedInfra
+    pool:
+      name: ${{ variables.agentPoolName }}
+      ${{ if eq(variables.agentPoolName, 'HostedAgent') }}:
+        vmImage: 'ubuntu-latest'
+    steps:
+    - bash: echo "Using agent: $(Agent.Name)"
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az deployment sub create \
+            --location centralus \
+            --template-file infra/shared-infrastructure.bicep \
+            --parameters @infra/shared-parameters.bicepparam \
+                         subscriptionId=${{ variables.subscriptionId }}
+
+# Per-Environment deployments with failover
+- ${{ each env in parameters.environments }}:
+  - stage: TryHosted_${{ env.key }}
+    displayName: 'Deploy ${{ env.key }} via Hosted Agent'
+    condition: eq(variables.agentPoolName, 'HostedAgent')
     jobs:
-    - job: DeploySharedInfra
-      displayName: 'Deploy Shared Resources'
+    - job: DeployHosted_${{ env.key }}
       pool:
+        name: HostedAgent
         vmImage: 'ubuntu-latest'
       steps:
+      - bash: echo "Using agent: $(Agent.Name)"
       - task: AzureCLI@2
         inputs:
           azureSubscription: 'HolyCheese-ServiceConnection'
@@ -34,18 +112,62 @@ stages:
           scriptLocation: inlineScript
           inlineScript: |
             az deployment sub create \
-              --location centralus \
-              --template-file infra/shared-infrastructure.bicep \
-              --parameters @infra/shared-parameters.bicepparam
+              --location ${{ env.value.location }} \
+              --template-file infra/deploy-environment.bicep \
+              --parameters \
+                appName=AzdoTools \
+                environmentName=${{ env.key }} \
+                location=${{ env.value.location }} \
+                subscriptionId=${{ variables.subscriptionId }}
+      - bash: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
 
-    # Provision each individual environment according to how its files are defined
-  - ${{ each env in parameters.environments }}:
-    - stage: Deploy_${{ env.key }}
-      displayName: 'Deploy to ${{ env.key }}'
-      jobs:
-      - template: pipelines/templates/deploy-environment.yml
-        parameters:
-          appName: 'AzdoTools'
-          environmentName: ${{ env.key }}
-          location: ${{ env.value.location }}
-          resourceGroup: ${{ env.value.resourceGroup }}
+  - stage: Fallback_${{ env.key }}
+    displayName: 'Fallback to Local Agent for ${{ env.key }}'
+    condition: and(eq(variables.agentPoolName, 'HostedAgent'), failed())
+    jobs:
+    - job: DeployFallback_${{ env.key }}
+      pool:
+        name: LocalPool
+      steps:
+      - bash: echo "Using agent: $(Agent.Name)"
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            az deployment sub create \
+              --location ${{ env.value.location }} \
+              --template-file infra/deploy-environment.bicep \
+              --parameters \
+                appName=AzdoTools \
+                environmentName=${{ env.key }} \
+                location=${{ env.value.location }} \
+                subscriptionId=${{ variables.subscriptionId }}
+      - bash: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
+
+  - stage: Deploy_${{ env.key }}
+    displayName: 'Direct Deploy to ${{ env.key }} (LocalPool)'
+    condition: ne(variables.agentPoolName, 'HostedAgent')
+    jobs:
+    - job: DeployDirect_${{ env.key }}
+      pool:
+        name: ${{ variables.agentPoolName }}
+        ${{ if eq(variables.agentPoolName, 'HostedAgent') }}:
+          vmImage: 'ubuntu-latest'
+      steps:
+      - bash: echo "Using agent: $(Agent.Name)"
+      - task: AzureCLI@2
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: bash
+          scriptLocation: inlineScript
+          inlineScript: |
+            az deployment sub create \
+              --location ${{ env.value.location }} \
+              --template-file infra/deploy-environment.bicep \
+              --parameters \
+                appName=AzdoTools \
+                environmentName=${{ env.key }} \
+                location=${{ env.value.location }} \
+                subscriptionId=${{ variables.subscriptionId }}

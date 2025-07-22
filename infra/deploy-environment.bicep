@@ -4,9 +4,6 @@
     "location": {
       "value": "centralus"
     },
-    "subscriptionId": {
-      "value": "42a2eb5c-8d13-451c-8b50-069e05cdbf86"
-    },
     "appName": {
       "value": "AzdoTools"
     },
