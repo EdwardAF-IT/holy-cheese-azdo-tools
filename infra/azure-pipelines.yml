@@ -1,4 +1,38 @@
-# ... parameter block remains unchanged ...
+trigger:
+  branches:
+    include:
+      - main
+
+parameters:
+  - name: useHostedAgent
+    type: boolean
+    default: true
+
+  - name: environments
+    type: object
+    default:
+      dev:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Dev'
+      test:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Test'
+
+  - name: sharedResourceGroup
+    type: string
+    default: 'AzdoTools-RG-Shared'
+
+  - name: subscriptionId
+    type: string
+    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'
+
+  - name: hostedAgentName
+    type: string
+    default: 'HostedAgent'
+
+  - name: localAgentName
+    type: string
+    default: 'LocalPool'
 
 stages:
 # 🧭 Shared Infrastructure Attempts
