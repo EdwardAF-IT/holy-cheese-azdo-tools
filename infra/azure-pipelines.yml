@@ -4,6 +4,10 @@ trigger:
       - main
 
 parameters:
+  - name: useHostedAgent
+    type: boolean
+    default: true
+
   - name: environments
     type: object
     default:
@@ -13,23 +17,31 @@ parameters:
       test:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Test'
+
   - name: sharedResourceGroup
     type: string
     default: 'AzdoTools-RG-Shared'
 
-variables:
-  useHostedAgent: true  # Set to true to use hosted agents; false for local pool
-  agentPoolName: ${{ if eq(variables.useHostedAgent, true) }} HostedAgent ${{ else }} LocalPool
-  subscriptionId: 42a2eb5c-8d13-451c-8b50-069e05cdbf86 
+  - name: subscriptionId
+    type: string
+    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'
 
-# Try hosted for shared infrustructure
+  - name: hostedAgentName
+    type: string
+    default: 'HostedAgent'
+
+  - name: localAgentName
+    type: string
+    default: 'LocalPool'
+
+# Try hosted for shared infrastructure
 stages:
 - stage: TryHostedShared
-  condition: eq(variables.agentPoolName, 'HostedAgent')
+  condition: eq(parameters.useHostedAgent, true)
   jobs:
   - job: DeploySharedHosted
     pool:
-      name: HostedAgent
+      name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     steps:
     - bash: echo "Using agent: $(Agent.Name)"
@@ -43,16 +55,16 @@ stages:
           az deployment sub create \
             --location centralus \
             --template-file infra/shared-infrastructure.bicep \
-            --parameters @infra/shared-parameters.bicepparam \
-                         subscriptionId=${{ variables.subscriptionId }}
+            --parameters \
+              subscriptionId=${{ parameters.subscriptionId }}
 
 # Fallback for shared infrastructure
 - stage: FallbackSharedLocal
-  condition: and(eq(variables.agentPoolName, 'HostedAgent'), failed())
+  condition: and(eq(parameters.useHostedAgent, true), failed())
   jobs:
   - job: DeploySharedLocalFallback
     pool:
-      name: LocalPool
+      name: ${{ parameters.localAgentName }}
     steps:
     - bash: |
         echo "Fallback triggered"
@@ -66,18 +78,16 @@ stages:
           az deployment sub create \
             --location centralus \
             --template-file infra/shared-infrastructure.bicep \
-            --parameters @infra/shared-parameters.bicepparam \
-                         subscriptionId=${{ variables.subscriptionId }}
+            --parameters \
+              subscriptionId=${{ parameters.subscriptionId }}
 
-# Local-only shared infrustructure
+# Local-only shared infrastructure
 - stage: ProvisionShared
-  condition: ne(variables.agentPoolName, 'HostedAgent')
+  condition: eq(parameters.useHostedAgent, false)
   jobs:
   - job: DeploySharedInfra
     pool:
-      name: ${{ variables.agentPoolName }}
-      ${{ if eq(variables.agentPoolName, 'HostedAgent') }}:
-        vmImage: 'ubuntu-latest'
+      name: ${{ parameters.localAgentName }}
     steps:
     - bash: echo "Using agent: $(Agent.Name)"
     - task: AzureCLI@2
@@ -89,18 +99,18 @@ stages:
           az deployment sub create \
             --location centralus \
             --template-file infra/shared-infrastructure.bicep \
-            --parameters @infra/shared-parameters.bicepparam \
-                         subscriptionId=${{ variables.subscriptionId }}
+            --parameters \
+              subscriptionId=${{ parameters.subscriptionId }}
 
 # Per-Environment deployments with failover
 - ${{ each env in parameters.environments }}:
   - stage: TryHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
-    condition: eq(variables.agentPoolName, 'HostedAgent')
+    condition: eq(parameters.useHostedAgent, true)
     jobs:
     - job: DeployHosted_${{ env.key }}
       pool:
-        name: HostedAgent
+        name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
       steps:
       - bash: echo "Using agent: $(Agent.Name)"
@@ -117,16 +127,16 @@ stages:
                 appName=AzdoTools \
                 environmentName=${{ env.key }} \
                 location=${{ env.value.location }} \
-                subscriptionId=${{ variables.subscriptionId }}
+                subscriptionId=${{ parameters.subscriptionId }}
       - bash: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
 
   - stage: Fallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
-    condition: and(eq(variables.agentPoolName, 'HostedAgent'), failed())
+    condition: and(eq(parameters.useHostedAgent, true), failed())
     jobs:
     - job: DeployFallback_${{ env.key }}
       pool:
-        name: LocalPool
+        name: ${{ parameters.localAgentName }}
       steps:
       - bash: echo "Using agent: $(Agent.Name)"
       - task: AzureCLI@2
@@ -142,18 +152,16 @@ stages:
                 appName=AzdoTools \
                 environmentName=${{ env.key }} \
                 location=${{ env.value.location }} \
-                subscriptionId=${{ variables.subscriptionId }}
+                subscriptionId=${{ parameters.subscriptionId }}
       - bash: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
 
   - stage: Deploy_${{ env.key }}
-    displayName: 'Direct Deploy to ${{ env.key }} (LocalPool)'
-    condition: ne(variables.agentPoolName, 'HostedAgent')
+    displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
+    condition: eq(parameters.useHostedAgent, false)
     jobs:
     - job: DeployDirect_${{ env.key }}
       pool:
-        name: ${{ variables.agentPoolName }}
-        ${{ if eq(variables.agentPoolName, 'HostedAgent') }}:
-          vmImage: 'ubuntu-latest'
+        name: ${{ parameters.localAgentName }}
       steps:
       - bash: echo "Using agent: $(Agent.Name)"
       - task: AzureCLI@2
@@ -169,4 +177,4 @@ stages:
                 appName=AzdoTools \
                 environmentName=${{ env.key }} \
                 location=${{ env.value.location }} \
-                subscriptionId=${{ variables.subscriptionId }}
+                subscriptionId=${{ parameters.subscriptionId }}
