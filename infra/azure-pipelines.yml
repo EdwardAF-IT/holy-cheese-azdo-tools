@@ -34,8 +34,8 @@ parameters:
     type: string
     default: 'LocalPool'
 
-# Try hosted for shared infrastructure
 stages:
+# Shared Infrastructure Attempts
 - stage: TryHostedShared
   condition: eq(parameters.useHostedAgent, true)
   jobs:
@@ -58,7 +58,6 @@ stages:
             --parameters \
               subscriptionId=${{ parameters.subscriptionId }}
 
-# Fallback for shared infrastructure
 - stage: FallbackSharedLocal
   condition: and(eq(parameters.useHostedAgent, true), failed())
   jobs:
@@ -81,7 +80,6 @@ stages:
             --parameters \
               subscriptionId=${{ parameters.subscriptionId }}
 
-# Local-only shared infrastructure
 - stage: ProvisionShared
   condition: eq(parameters.useHostedAgent, false)
   jobs:
@@ -102,7 +100,7 @@ stages:
             --parameters \
               subscriptionId=${{ parameters.subscriptionId }}
 
-# Per-Environment deployments with failover
+# Environment Deployments (Looped)
 - ${{ each env in parameters.environments }}:
   - stage: TryHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
