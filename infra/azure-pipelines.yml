@@ -18,9 +18,8 @@ parameters:
     default: 'AzdoTools-RG-Shared'
 
 variables:
-  useHostedAgent: false  # Set to true to use hosted agents; false for local pool
-  agentPoolName: ${{ if eq(variables.useHostedAgent, true) }}: HostedAgent
-                 ${{ if eq(variables.useHostedAgent, false) }}: LocalPool
+  useHostedAgent: true  # Set to true to use hosted agents; false for local pool
+  agentPoolName: ${{ if eq(variables.useHostedAgent, true) }} HostedAgent ${{ else }} LocalPool
   subscriptionId: 42a2eb5c-8d13-451c-8b50-069e05cdbf86 
 
 # Try hosted for shared infrustructure
