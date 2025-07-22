@@ -8,16 +8,6 @@ parameters:
     type: boolean
     default: true
 
-  - name: environments
-    type: object
-    default:
-      dev:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Dev'
-      test:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Test'
-
   - name: sharedResourceGroup
     type: string
     default: 'AzdoTools-RG-Shared'
@@ -33,6 +23,15 @@ parameters:
   - name: localAgentName
     type: string
     default: 'LocalPool'
+
+variables:
+  environments:
+    dev:
+      location: 'centralus'
+      resourceGroup: 'AzdoTools-RG-Dev'
+    test:
+      location: 'centralus'
+      resourceGroup: 'AzdoTools-RG-Test'
 
 stages:
 # 🧭 Shared Infrastructure Attempts
@@ -104,7 +103,7 @@ stages:
               subscriptionId=${{ parameters.subscriptionId }}
 
 # 🚀 Environment Deployments (Looped)
-- ${{ each env in parameters.environments }}:
+- ${{ each env in variables.environments }}:
   - stage: TryHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(parameters.useHostedAgent, true)
