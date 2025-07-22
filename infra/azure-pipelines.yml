@@ -1,41 +1,7 @@
-trigger:
-  branches:
-    include:
-      - main
-
-parameters:
-  - name: useHostedAgent
-    type: boolean
-    default: true
-
-  - name: environments
-    type: object
-    default:
-      dev:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Dev'
-      test:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Test'
-
-  - name: sharedResourceGroup
-    type: string
-    default: 'AzdoTools-RG-Shared'
-
-  - name: subscriptionId
-    type: string
-    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'
-
-  - name: hostedAgentName
-    type: string
-    default: 'HostedAgent'
-
-  - name: localAgentName
-    type: string
-    default: 'LocalPool'
+# ... parameter block remains unchanged ...
 
 stages:
-# Shared Infrastructure Attempts
+# 🧭 Shared Infrastructure Attempts
 - stage: TryHostedShared
   condition: eq(parameters.useHostedAgent, true)
   jobs:
@@ -44,7 +10,8 @@ stages:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     steps:
-    - bash: echo "Using agent: $(Agent.Name)"
+    - script: echo "Using agent: $(Agent.Name)"
+      displayName: 'Agent Info'
     - task: AzureCLI@2
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
@@ -65,9 +32,10 @@ stages:
     pool:
       name: ${{ parameters.localAgentName }}
     steps:
-    - bash: |
+    - script: |
         echo "Fallback triggered"
         echo "##vso[task.setvariable variable=sharedAgentFallback;isOutput=true]true"
+      displayName: 'Mark Fallback Active'
     - task: AzureCLI@2
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
@@ -87,7 +55,8 @@ stages:
     pool:
       name: ${{ parameters.localAgentName }}
     steps:
-    - bash: echo "Using agent: $(Agent.Name)"
+    - script: echo "Using agent: $(Agent.Name)"
+      displayName: 'Agent Info'
     - task: AzureCLI@2
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
@@ -100,7 +69,7 @@ stages:
             --parameters \
               subscriptionId=${{ parameters.subscriptionId }}
 
-# Environment Deployments (Looped)
+# 🚀 Environment Deployments (Looped)
 - ${{ each env in parameters.environments }}:
   - stage: TryHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
@@ -111,7 +80,8 @@ stages:
         name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
       steps:
-      - bash: echo "Using agent: $(Agent.Name)"
+      - script: echo "Using agent: $(Agent.Name)"
+        displayName: 'Agent Info'
       - task: AzureCLI@2
         inputs:
           azureSubscription: 'HolyCheese-ServiceConnection'
@@ -126,7 +96,8 @@ stages:
                 environmentName=${{ env.key }} \
                 location=${{ env.value.location }} \
                 subscriptionId=${{ parameters.subscriptionId }}
-      - bash: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
+      - script: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
+        displayName: 'Mark Hosted Deploy Success'
 
   - stage: Fallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
@@ -136,7 +107,8 @@ stages:
       pool:
         name: ${{ parameters.localAgentName }}
       steps:
-      - bash: echo "Using agent: $(Agent.Name)"
+      - script: echo "Using agent: $(Agent.Name)"
+        displayName: 'Agent Info'
       - task: AzureCLI@2
         inputs:
           azureSubscription: 'HolyCheese-ServiceConnection'
@@ -151,7 +123,8 @@ stages:
                 environmentName=${{ env.key }} \
                 location=${{ env.value.location }} \
                 subscriptionId=${{ parameters.subscriptionId }}
-      - bash: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
+      - script: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
+        displayName: 'Mark Fallback Active'
 
   - stage: Deploy_${{ env.key }}
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
@@ -161,7 +134,8 @@ stages:
       pool:
         name: ${{ parameters.localAgentName }}
       steps:
-      - bash: echo "Using agent: $(Agent.Name)"
+      - script: echo "Using agent: $(Agent.Name)"
+        displayName: 'Agent Info'
       - task: AzureCLI@2
         inputs:
           azureSubscription: 'HolyCheese-ServiceConnection'
