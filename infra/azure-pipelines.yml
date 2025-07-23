@@ -14,15 +14,15 @@ parameters:
 
   - name: subscriptionId
     type: string
-    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'
+    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'  // Subscription ID for Azure resources
 
   - name: hostedAgentName
     type: string
-    default: 'Azure Pipelines'
+    default: 'Azure Pipelines'  // Name of the hosted agent pool in Azure DevOps
 
   - name: localAgentName
     type: string
-    default: 'Self-hosted Agents'
+    default: 'Self-hosted Agents'  // Name of the self-hosted agent pool in Azure DevOps
 
   - name: environments
     type: object
@@ -36,10 +36,103 @@ parameters:
 
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
+  rgSuffixes: ${{ concat(keys(parameters.environments), ['Shared']) }}  // Needed to create a consistent suffix for resource groups
 
 stages:
+- stage: ProvisionSubscriptionInfra
+  displayName: 'Prepare Subscription-Level Resources (Hosted Agent)'
+  condition: eq(variables.useHostedAgent, true)
+  jobs:
+  - job: DeploySubscriptionBaseline
+    pool:
+      name: ${{ parameters.hostedAgentName }}
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: "echo \"Using agent: $(Agent.Name)\""
+      displayName: 'Agent Info'
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Provisioning baseline subscription infrastructure with hosted agent..."
+          az deployment sub create \
+            --location 'centralus' \
+            --template-file infra/subscription-baseline.bicep \
+            --parameters \
+              rgSuffixes=${{ convertToJson(variables.rgSuffixes) }} \
+              projectPrefix='AzdoTools' \
+              location='centralus'
+      displayName: 'Deploy Subscription Baseline (Hosted)'
+
+- stage: FallbackSubscriptionInfraLocal
+  displayName: 'Fallback Subscription-Level Resources (Local Agent)'
+  condition: and(eq(variables.useHostedAgent, true), failed())
+  jobs:
+  - job: DeploySubscriptionBaselineFallback
+    pool:
+      name: ${{ parameters.localAgentName }}
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Fallback triggered — using local agent"
+          echo "##vso[task.setvariable variable=subscriptionAgentFallback;isOutput=true]true"
+      displayName: 'Mark Fallback Active'
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Provisioning baseline subscription infrastructure with local agent..."
+          az deployment sub create \
+            --location 'centralus' \
+            --template-file infra/subscription-baseline.bicep \
+            --parameters \
+              rgSuffixes=${{ convertToJson(variables.rgSuffixes) }} \
+              projectPrefix='AzdoTools' \
+              location='centralus'
+      displayName: 'Deploy Subscription Baseline (Fallback)'
+
+- stage: ProvisionSubscriptionLocal
+  displayName: 'Provision Subscription Resources via Local Agent'
+  condition: eq(variables.useHostedAgent, false)
+  jobs:
+  - job: DeploySubscriptionBaselineLocal
+    pool:
+      name: ${{ parameters.localAgentName }}
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: "echo \"Using local agent: $(Agent.Name)\""
+      displayName: 'Agent Info'
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Provisioning subscription infrastructure directly with local agent..."
+          az deployment sub create \
+            --location 'centralus' \
+            --template-file infra/subscription-baseline.bicep \
+            --parameters \
+              rgSuffixes=${{ convertToJson(variables.rgSuffixes) }} \
+              projectPrefix='AzdoTools' \
+              location='centralus'
+      displayName: 'Deploy Subscription Baseline (Direct Local)'
+
+
 - stage: TryHostedShared
   condition: eq(variables.useHostedAgent, true)
+  displayName: 'Provision Shared Resources with Hosted Agent'
   jobs:
   - job: DeploySharedHosted
     pool:
@@ -70,6 +163,7 @@ stages:
 
 - stage: FallbackSharedLocal
   condition: and(eq(variables.useHostedAgent, true), failed())
+  displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
   - job: DeploySharedLocalFallback
     pool:
@@ -99,6 +193,7 @@ stages:
 
 - stage: ProvisionShared
   condition: eq(variables.useHostedAgent, false)
+  displayName: 'Provision Shared Resources'
   jobs:
   - job: DeploySharedInfra
     pool:
