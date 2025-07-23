@@ -124,7 +124,7 @@ stages:
       - task: Bash@3
         inputs:
           targetType: 'inline'
-        script: "echo \"Using agent: $(Agent.Name)\""
+          script: "echo \"Using agent: $(Agent.Name)\""
         displayName: 'Agent Info'
       - task: AzureCLI@2
         inputs:
@@ -157,7 +157,7 @@ stages:
       - task: Bash@3
         inputs:
           targetType: 'inline'
-        script: "echo \"Using agent: $(Agent.Name)\""
+          script: "echo \"Using agent: $(Agent.Name)\""
         displayName: 'Agent Info'
       - task: AzureCLI@2
         inputs:
@@ -190,7 +190,7 @@ stages:
       - task: Bash@3
         inputs:
           targetType: 'inline'
-        script: "echo \"Using agent: $(Agent.Name)\""
+          script: "echo \"Using agent: $(Agent.Name)\""
         displayName: 'Agent Info'
       - task: AzureCLI@2
         inputs:
