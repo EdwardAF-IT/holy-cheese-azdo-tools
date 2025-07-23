@@ -22,16 +22,17 @@ parameters:
 
   - name: localAgentName
     type: string
-    default: 'LocalPool'
+    default: 'LocalAgent'
 
-variables:
-  environments:
-    dev:
-      location: 'centralus'
-      resourceGroup: 'AzdoTools-RG-Dev'
-    test:
-      location: 'centralus'
-      resourceGroup: 'AzdoTools-RG-Test'
+  - name: environments
+    type: object
+    default:
+      dev:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Dev'
+      test:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Test'
 
 stages:
 - stage: TryHostedShared
@@ -110,7 +111,7 @@ stages:
             --parameters \
               subscriptionId=${{ parameters.subscriptionId }}
 
-- ${{ each env in variables.environments }}:
+- ${{ each env in parameters.environments }}:
   - stage: TryHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(parameters.useHostedAgent, true)
