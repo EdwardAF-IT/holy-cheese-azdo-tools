@@ -128,7 +128,6 @@ stages:
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Direct Local)'
 
-
 - stage: TryHostedShared
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
@@ -157,8 +156,6 @@ stages:
               resourceGroupName='${{ parameters.sharedResourceGroup }}' \
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}' \
-            --verbose --debug
-
 
 - stage: FallbackSharedLocal
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -284,8 +281,6 @@ stages:
                 resourceGroupName='${{ env.value.resourceGroup }}' \
                 tags={} \
                 subscriptionId='${{ parameters.subscriptionId }}'
-
-            
       - task: Bash@3
         inputs:
           targetType: 'inline'
