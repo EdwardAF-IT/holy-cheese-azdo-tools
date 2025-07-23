@@ -3,6 +3,9 @@ param location string
 param subscriptionId string
 param tags object
 
+output rgName string = resourceGroupName
+output subId string = subscriptionId
+
 resource sharedInsights 'microsoft.insights/components@2020-02-02' = {
   name: 'AzdoTools-Shared-Insights'
   location: location

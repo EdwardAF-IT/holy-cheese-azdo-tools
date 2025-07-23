@@ -64,7 +64,8 @@ stages:
               location='centralus' \
               resourceGroupName='${{ parameters.sharedResourceGroup }}' \
               tags={} \
-              subscriptionId='${{ parameters.subscriptionId }}'
+              subscriptionId='${{ parameters.subscriptionId }}' \
+              -verbose -debug
 
 
 - stage: FallbackSharedLocal
