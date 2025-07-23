@@ -34,9 +34,12 @@ parameters:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Test'
 
+variables:
+  useHostedAgent: ${{ parameters.useHostedAgent }}
+
 stages:
 - stage: TryHostedShared
-  condition: eq(parameters.useHostedAgent, true)
+  condition: eq(variables.useHostedAgent, true)
   jobs:
   - job: DeploySharedHosted
     pool:
@@ -62,7 +65,7 @@ stages:
               subscriptionId=${{ parameters.subscriptionId }}
 
 - stage: FallbackSharedLocal
-  condition: and(eq(parameters.useHostedAgent, true), failed())
+  condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
   - job: DeploySharedLocalFallback
     pool:
@@ -88,7 +91,7 @@ stages:
               subscriptionId=${{ parameters.subscriptionId }}
 
 - stage: ProvisionShared
-  condition: eq(parameters.useHostedAgent, false)
+  condition: eq(variables.useHostedAgent, false)
   jobs:
   - job: DeploySharedInfra
     pool:
@@ -114,7 +117,7 @@ stages:
 - ${{ each env in parameters.environments }}:
   - stage: TryHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
-    condition: eq(parameters.useHostedAgent, true)
+    condition: eq(variables.useHostedAgent, true)
     jobs:
     - job: DeployHosted_${{ env.key }}
       pool:
@@ -148,7 +151,7 @@ stages:
 
   - stage: Fallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
-    condition: and(eq(parameters.useHostedAgent, true), failed())
+    condition: and(eq(variables.useHostedAgent, true), failed())
     jobs:
     - job: DeployFallback_${{ env.key }}
       pool:
@@ -181,7 +184,7 @@ stages:
 
   - stage: Deploy_${{ env.key }}
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
-    condition: eq(parameters.useHostedAgent, false)
+    condition: eq(variables.useHostedAgent, false)
     jobs:
     - job: DeployDirect_${{ env.key }}
       pool:
