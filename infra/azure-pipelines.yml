@@ -65,7 +65,7 @@ stages:
               resourceGroupName='${{ parameters.sharedResourceGroup }}' \
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}' \
-              -verbose -debug
+            --verbose --debug
 
 
 - stage: FallbackSharedLocal
