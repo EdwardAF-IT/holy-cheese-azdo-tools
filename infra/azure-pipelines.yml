@@ -14,15 +14,15 @@ parameters:
 
   - name: subscriptionId
     type: string
-    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'  // Subscription ID for Azure resources
+    default: '42a2eb5c-8d13-451c-8b50-069e05cdbf86'
 
   - name: hostedAgentName
     type: string
-    default: 'Azure Pipelines'  // Name of the hosted agent pool in Azure DevOps
+    default: 'Azure Pipelines'
 
   - name: localAgentName
     type: string
-    default: 'Self-hosted Agents'  // Name of the self-hosted agent pool in Azure DevOps
+    default: 'Self-hosted Agents'
 
   - name: environments
     type: object
