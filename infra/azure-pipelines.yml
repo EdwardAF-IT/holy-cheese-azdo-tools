@@ -36,7 +36,6 @@ parameters:
 
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
-  rgSuffixes: ${{ concat(keys(parameters.environments), ['Shared']) }}  // Needed to create a consistent suffix for resource groups
 
 stages:
 - stage: ProvisionSubscriptionInfra
@@ -64,7 +63,7 @@ stages:
             --location 'centralus' \
             --template-file infra/subscription-baseline.bicep \
             --parameters \
-              rgSuffixes=${{ convertToJson(variables.rgSuffixes) }} \
+              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
               projectPrefix='AzdoTools' \
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Hosted)'
@@ -95,7 +94,7 @@ stages:
             --location 'centralus' \
             --template-file infra/subscription-baseline.bicep \
             --parameters \
-              rgSuffixes=${{ convertToJson(variables.rgSuffixes) }} \
+              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
               projectPrefix='AzdoTools' \
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Fallback)'
@@ -124,7 +123,7 @@ stages:
             --location 'centralus' \
             --template-file infra/subscription-baseline.bicep \
             --parameters \
-              rgSuffixes=${{ convertToJson(variables.rgSuffixes) }} \
+              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
               projectPrefix='AzdoTools' \
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Direct Local)'
