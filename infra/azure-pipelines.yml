@@ -18,11 +18,11 @@ parameters:
 
   - name: hostedAgentName
     type: string
-    default: 'HostedAgent'
+    default: 'Azure Pipelines'
 
   - name: localAgentName
     type: string
-    default: 'LocalAgent'
+    default: 'Self-hosted Agents'
 
   - name: environments
     type: object
