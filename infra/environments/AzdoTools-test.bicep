@@ -4,14 +4,11 @@ param environmentName string
 param tags object = {}
 param subscriptionId string
 
-var mergedTags = empty(tags) ? {} : tags
-
-var tagsAll = {
+var tagsAll = union({
   App: appName
   Environment: environmentName
   Owner: 'Edward'
-  ...mergedTags
-}
+}, tags)
 
 var prefix = '${appName}-${environmentName}'
 var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/${appName}-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
