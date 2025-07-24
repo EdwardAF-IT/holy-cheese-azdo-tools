@@ -4,11 +4,13 @@ param environmentName string
 param tags object = {}
 param subscriptionId string
 
+var mergedTags = empty(tags) ? {} : tags
+
 var tagsAll = {
   App: appName
   Environment: environmentName
   Owner: 'Edward'
-  ...tags
+  ...mergedTags
 }
 
 var prefix = '${appName}-${environmentName}'
