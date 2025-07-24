@@ -8,9 +8,9 @@ parameters:
     type: boolean
     default: true
 
-  - name: sharedResourceGroup
+  - name: appName
     type: string
-    default: 'AzdoTools-RG-Shared'
+    default: 'AzdoTools'
 
   - name: subscriptionId
     type: string
@@ -36,6 +36,7 @@ parameters:
 
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
+  sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
 
 stages:
 - stage: ProvisionSubscriptionInfra
@@ -64,7 +65,7 @@ stages:
             --template-file infra/subscription-baseline.bicep \
             --parameters \
               rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
-              projectPrefix='AzdoTools' \
+              projectPrefix=${{ parameters.appName }} \
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Hosted)'
 
@@ -95,7 +96,7 @@ stages:
             --template-file infra/subscription-baseline.bicep \
             --parameters \
               rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
-              projectPrefix='AzdoTools' \
+              projectPrefix=${{ parameters.appName }} \
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Fallback)'
 
@@ -124,7 +125,7 @@ stages:
             --template-file infra/subscription-baseline.bicep \
             --parameters \
               rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
-              projectPrefix='AzdoTools' \
+              projectPrefix=${{ parameters.appName }} \
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Direct Local)'
 
@@ -236,11 +237,14 @@ stages:
           scriptType: bash
           scriptLocation: inlineScript
           inlineScript: |
+            envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+            echo "Deploying ${{ env.key }} using template: $envFile"
+          
             az deployment group create \
               --resource-group ${{ env.value.resourceGroup }} \
-              --template-file infra/deploy-environment.bicep \
+              --template-file $envFile \
               --parameters \
-                appName='AzdoTools' \
+                appName=${{ parameters.appName }} \
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
                 resourceGroupName='${{ env.value.resourceGroup }}' \
@@ -271,11 +275,14 @@ stages:
           scriptType: bash
           scriptLocation: inlineScript
           inlineScript: |
+            envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+            echo "Deploying ${{ env.key }} using template: $envFile"
+          
             az deployment group create \
               --resource-group ${{ env.value.resourceGroup }} \
-              --template-file infra/deploy-environment.bicep \
+              --template-file $envFile \
               --parameters \
-                appName='AzdoTools' \
+                appName=${{ parameters.appName }} \
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
                 resourceGroupName='${{ env.value.resourceGroup }}' \
@@ -306,11 +313,14 @@ stages:
           scriptType: bash
           scriptLocation: inlineScript
           inlineScript: |
+            envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+            echo "Deploying ${{ env.key }} using template: $envFile"
+          
             az deployment group create \
               --resource-group ${{ env.value.resourceGroup }} \
-              --template-file infra/deploy-environment.bicep \
+              --template-file $envFile \
               --parameters \
-                appName='AzdoTools' \
+                appName=${{ parameters.appName }} \
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
                 resourceGroupName='${{ env.value.resourceGroup }}' \
