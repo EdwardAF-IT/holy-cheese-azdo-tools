@@ -248,7 +248,7 @@ stages:
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
                 tags={} \
-                subscriptionId='${{ parameters.subscriptionId }}'
+                subscriptionId='${{ parameters.subscriptionId }}' \
               --debug
       - task: Bash@3
         inputs:
