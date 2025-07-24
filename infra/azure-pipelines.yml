@@ -247,7 +247,6 @@ stages:
                 appName=${{ parameters.appName }} \
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
-                resourceGroupName='${{ env.value.resourceGroup }}' \
                 tags={} \
                 subscriptionId='${{ parameters.subscriptionId }}'
       - task: Bash@3
@@ -285,7 +284,6 @@ stages:
                 appName=${{ parameters.appName }} \
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
-                resourceGroupName='${{ env.value.resourceGroup }}' \
                 tags={} \
                 subscriptionId='${{ parameters.subscriptionId }}'
       - task: Bash@3
@@ -323,7 +321,6 @@ stages:
                 appName=${{ parameters.appName }} \
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
-                resourceGroupName='${{ env.value.resourceGroup }}' \
                 tags={} \
                 subscriptionId='${{ parameters.subscriptionId }}'
 
