@@ -150,11 +150,11 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           az deployment group create \
-            --resource-group ${{ parameters.sharedResourceGroup }} \
+            --resource-group ${{ variables.sharedResourceGroup }} \
             --template-file infra/shared-infrastructure.bicep \
             --parameters \
               location='centralus' \
-              resourceGroupName='${{ parameters.sharedResourceGroup }}' \
+              resourceGroupName='${{ variables.sharedResourceGroup }}' \
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}' \
 
@@ -180,11 +180,11 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           az deployment group create \
-            --resource-group ${{ parameters.sharedResourceGroup }} \
+            --resource-group ${{ variables.sharedResourceGroup }} \
             --template-file infra/shared-infrastructure.bicep \
             --parameters \
               location='centralus' \
-              resourceGroupName='${{ parameters.sharedResourceGroup }}' \
+              resourceGroupName='${{ variables.sharedResourceGroup }}' \
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}'
 
@@ -208,11 +208,11 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           az deployment group create \
-            --resource-group ${{ parameters.sharedResourceGroup }} \
+            --resource-group ${{ variables.sharedResourceGroup }} \
             --template-file infra/shared-infrastructure.bicep \
             --parameters \
               location='centralus' \
-              resourceGroupName='${{ parameters.sharedResourceGroup }}' \
+              resourceGroupName='${{ variables.sharedResourceGroup }}' \
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}'
 
