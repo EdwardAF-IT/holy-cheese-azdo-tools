@@ -5,7 +5,7 @@ param tags object
 resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   name: storageName
   location: location
-  sku: { name: 'Standard_LRS', tier: 'Standard' }
+  sku: { name: 'Standard_LRS' }
   kind: 'Storage'
   properties: {
     supportsHttpsTrafficOnly: true
@@ -19,3 +19,5 @@ resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   }
   tags: tags
 }
+
+output storageName string = storage.name

@@ -31,3 +31,5 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   }
   tags: tags
 }
+
+output functionAppName string = functionApp.name

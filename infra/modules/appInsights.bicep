@@ -12,3 +12,5 @@ resource appInsights 'microsoft.insights/components@2020-02-02' = {
   }
   tags: tags
 }
+
+output insightsName string = appInsights.name
