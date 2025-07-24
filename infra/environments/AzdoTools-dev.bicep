@@ -10,11 +10,11 @@ var tags = {
 }
 
 var prefix = '${appName}-${environmentName}'
-var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/AzdoTools-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
-var sharedHostingPlanName = 'AzdoTools-AppServicePlan-Shared'
+var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/${appName}-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
+var sharedHostingPlanName = '${appName}-AppServicePlan-Shared'
 
 // Key Vault
-module kv './modules/keyVault.bicep' = {
+module kv '../modules/keyVault.bicep' = {
   name: '${prefix}-kv'
   params: {
     kvName: '${prefix}-kv'
@@ -24,7 +24,7 @@ module kv './modules/keyVault.bicep' = {
 }
 
 // Storage Account
-module storage './modules/storage.bicep' = {
+module storage '../modules/storage.bicep' = {
   name: '${prefix}-storage'
   params: {
     storageName: toLower('${prefix}storage')
@@ -34,7 +34,7 @@ module storage './modules/storage.bicep' = {
 }
 
 // Function App
-module fnapp './modules/functionApp.bicep' = {
+module fnapp '../modules/functionApp.bicep' = {
   name: '${prefix}-fnapp'
   params: {
     appName: prefix
