@@ -1,12 +1,14 @@
 param location string
 param appName string
 param environmentName string
+param tags object = {}
 param subscriptionId string
 
 var tags = {
   App: appName
   Environment: environmentName
   Owner: 'Edward'
+  ...tags
 }
 
 var prefix = '${appName}-${environmentName}'
