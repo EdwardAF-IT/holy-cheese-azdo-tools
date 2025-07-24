@@ -37,6 +37,9 @@ module storage '../modules/storage.bicep' = {
 // Function App
 module fnapp '../modules/functionApp.bicep' = {
   name: '${prefix}-fnapp'
+  dependsOn: [
+    storage
+  ]
   params: {
     appName: prefix
     location: location
