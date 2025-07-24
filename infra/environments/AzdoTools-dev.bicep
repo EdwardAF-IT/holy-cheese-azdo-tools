@@ -4,7 +4,7 @@ param environmentName string
 param tags object = {}
 param subscriptionId string
 
-var tags = {
+var tagsAll = {
   App: appName
   Environment: environmentName
   Owner: 'Edward'
@@ -21,7 +21,7 @@ module kv '../modules/keyVault.bicep' = {
   params: {
     kvName: '${prefix}-kv'
     location: location
-    tags: tags
+    tags: tagsAll
   }
 }
 
@@ -31,7 +31,7 @@ module storage '../modules/storage.bicep' = {
   params: {
     storageName: toLower('${prefix}storage')
     location: location
-    tags: tags
+    tags: tagsAll
   }
 }
 
@@ -44,6 +44,6 @@ module fnapp '../modules/functionApp.bicep' = {
     hostingPlanName: sharedHostingPlanName
     insightsId: sharedInsightsId
     storageAccountName: storage.outputs.storageName
-    tags: tags
+    tags: tagsAll
   }
 }
