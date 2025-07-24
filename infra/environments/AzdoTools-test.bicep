@@ -11,6 +11,7 @@ var tagsAll = union({
 }, tags)
 
 var prefix = '${appName}-${environmentName}'
+var safePrefix = toLower('${appName}${environmentName}')
 var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/${appName}-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
 var sharedHostingPlanName = '${appName}-AppServicePlan-Shared'
 
@@ -26,7 +27,7 @@ module kv '../modules/keyVault.bicep' = {
 
 // Storage Account
 module storage '../modules/storage.bicep' = {
-  name: '${prefix}-storage'
+  name: '${safePrefix}storage'
   params: {
     storageName: toLower('${prefix}storage')
     location: location
