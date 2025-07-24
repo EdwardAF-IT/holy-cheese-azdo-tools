@@ -249,6 +249,7 @@ stages:
                 location='${{ env.value.location }}' \
                 tags={} \
                 subscriptionId='${{ parameters.subscriptionId }}'
+              --log-level 'debug'
       - task: Bash@3
         inputs:
           targetType: 'inline'
