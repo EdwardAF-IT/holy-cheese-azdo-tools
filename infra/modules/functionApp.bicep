@@ -1,12 +1,12 @@
 param appName string
 param location string
-param hostingPlanName string
+param hostingPlanId string
 param insightsId string
 param storageAccountName string
 param tags object
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' existing = {
-  name: hostingPlanName
+  name: last(split(hostingPlanId, '/'))
 }
 
 resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
@@ -15,7 +15,7 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   kind: 'functionapp'
   identity: { type: 'SystemAssigned' }
   properties: {
-    serverFarmId: hostingPlan.id
+    serverFarmId: hostingPlanId
     siteConfig: {
       appSettings: [
         {

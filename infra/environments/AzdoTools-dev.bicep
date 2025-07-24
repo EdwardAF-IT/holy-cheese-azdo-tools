@@ -14,6 +14,7 @@ var prefix = '${appName}-${environmentName}'
 var safePrefix = toLower('${appName}${environmentName}')
 var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/${appName}-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
 var sharedHostingPlanName = '${appName}-AppServicePlan-Shared'
+var sharedHostingPlanId = '/subscriptions/${subscriptionId}/resourceGroups/${appName}-RG-Shared/providers/Microsoft.Web/serverfarms/${sharedHostingPlanName}'
 
 // Key Vault
 module kv '../modules/keyVault.bicep' = {
@@ -44,7 +45,7 @@ module fnapp '../modules/functionApp.bicep' = {
   params: {
     appName: prefix
     location: location
-    hostingPlanName: sharedHostingPlanName
+    hostingPlanId: sharedHostingPlanId
     insightsId: sharedInsightsId
     storageAccountName: storage.outputs.storageName
     tags: tagsAll
