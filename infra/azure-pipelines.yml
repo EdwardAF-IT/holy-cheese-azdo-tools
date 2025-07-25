@@ -40,7 +40,7 @@ variables:
 
 stages:
 - stage: ProvisionSubscriptionInfra
-  displayName: 'Prepare Subscription-Level Resources (Hosted Agent)'
+  displayName: 'Prepare Subscription-Level Resources(Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   jobs:
   - job: DeploySubscriptionBaseline
