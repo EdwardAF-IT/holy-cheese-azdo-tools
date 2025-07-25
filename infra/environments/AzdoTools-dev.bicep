@@ -30,7 +30,7 @@ module kv '../modules/keyVault.bicep' = {
 module storage '../modules/storage.bicep' = {
   name: '${prefix}storage'
   params: {
-    storageName: toLower('${safePrefix}storage')
+    storageName: toLower('${safePrefix}storage1')
     location: location
     tags: tagsAll
   }
