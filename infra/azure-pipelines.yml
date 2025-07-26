@@ -48,6 +48,13 @@ stages:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     steps:
+-   task: Bash@3
+    inputs:
+      targetType: 'inline'
+      script: |
+        echo "Simulating hosted agent failure..."
+        exit 1
+    displayName: 'Simulate Hosted Failure'
     - task: Bash@3
       inputs:
         targetType: 'inline'
@@ -129,7 +136,7 @@ stages:
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Direct Local)'
 
-- stage: TryHostedShared
+- stage: ProvisionSharedHosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
   jobs:
@@ -138,6 +145,13 @@ stages:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     steps:
+   - task: Bash@3
+     inputs:
+       targetType: 'inline'
+       script: |
+         echo "Simulating hosted agent failure..."
+         exit 1
+     displayName: 'Simulate Hosted Failure'
     - task: Bash@3
       inputs:
         targetType: 'inline'
@@ -217,7 +231,7 @@ stages:
               subscriptionId='${{ parameters.subscriptionId }}'
 
 - ${{ each env in parameters.environments }}:
-  - stage: TryHosted_${{ env.key }}
+  - stage: ProvisionHosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     jobs:
@@ -226,6 +240,13 @@ stages:
         name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
       steps:
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: |
+            echo "Simulating hosted agent failure..."
+            exit 1
+        displayName: 'Simulate Hosted Failure'
       - task: Bash@3
         inputs:
           targetType: 'inline'
