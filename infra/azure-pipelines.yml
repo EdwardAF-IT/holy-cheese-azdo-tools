@@ -54,7 +54,7 @@ stages:
       script: |
         echo "Simulating hosted agent failure..."
         exit 1
-    displayName: 'Simulate Hosted Failure'
+      displayName: 'Simulate Hosted Failure'
     - task: Bash@3
       inputs:
         targetType: 'inline'
