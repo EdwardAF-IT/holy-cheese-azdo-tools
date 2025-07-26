@@ -32,7 +32,7 @@ foreach ($rg in $targetRGs) {
     # Purge Key Vaults that were soft-deleted
     foreach ($kvName in $keyVaultNames) {
         Write-Host "Purging deleted Key Vault:" $kvName -ForegroundColor Magenta
-        az keyvault purge --name $kvName
+        az keyvault purge --name $kvName --location $location
     }
 
     # Purge Storage Accounts that were soft-deleted
