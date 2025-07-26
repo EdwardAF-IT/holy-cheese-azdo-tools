@@ -48,17 +48,19 @@ stages:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     steps:
--   task: Bash@3
-    inputs:
-      targetType: 'inline'
-      script: |
-        echo "Simulating hosted agent failure..."
-        exit 1
-      displayName: 'Simulate Hosted Failure'
     - task: Bash@3
       inputs:
         targetType: 'inline'
-        script: "echo \"Using agent: $(Agent.Name)\""
+        script: |
+          echo "Simulating hosted agent failure..."
+          exit 1
+      displayName: 'Simulate Hosted Failure'
+    
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Using agent: $(Agent.Name)"
       displayName: 'Agent Info'
     - task: AzureCLI@2
       inputs:
@@ -151,7 +153,7 @@ stages:
        script: |
          echo "Simulating hosted agent failure..."
          exit 1
-     displayName: 'Simulate Hosted Failure'
+      displayName: 'Simulate Hosted Failure'
     - task: Bash@3
       inputs:
         targetType: 'inline'
