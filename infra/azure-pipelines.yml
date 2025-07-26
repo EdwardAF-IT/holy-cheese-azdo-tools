@@ -55,7 +55,6 @@ stages:
           echo "Simulating hosted agent failure..."
           exit 1
       displayName: 'Simulate Hosted Failure'
-    
     - task: Bash@3
       inputs:
         targetType: 'inline'
@@ -147,12 +146,12 @@ stages:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     steps:
-   - task: Bash@3
-     inputs:
-       targetType: 'inline'
-       script: |
-         echo "Simulating hosted agent failure..."
-         exit 1
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Simulating hosted agent failure..."
+          exit 1
       displayName: 'Simulate Hosted Failure'
     - task: Bash@3
       inputs:
