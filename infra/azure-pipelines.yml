@@ -283,8 +283,8 @@ stages:
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
-    continueOnError: true
   - job: ProvisionSharedResources_FallbackToLocalAgent
+    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
