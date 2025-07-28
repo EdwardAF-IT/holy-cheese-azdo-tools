@@ -95,16 +95,19 @@ stages:
     - task: AzureCLI@2
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: bash
+        scriptType: ps
         scriptLocation: inlineScript
         inlineScript: |
-          echo "Provisioning baseline subscription infrastructure with local agent..."
-          az deployment sub create \
-            --location 'centralus' \
-            --template-file infra/subscription-baseline.bicep \
-            --parameters \
-              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
-              projectPrefix=${{ parameters.appName }} \
+          Write-Host "Provisioning baseline subscription infrastructure with local agent..."
+          $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
+          $rgSuffixes += 'Shared'
+    
+          az deployment sub create `
+            --location 'centralus' `
+            --template-file 'infra/subscription-baseline.bicep' `
+            --parameters `
+              rgSuffixes=$rgSuffixes `
+              projectPrefix='${{ parameters.appName }}' `
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Fallback)'
 
