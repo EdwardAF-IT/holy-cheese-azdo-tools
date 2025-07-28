@@ -437,40 +437,46 @@ stages:
         condition: succeeded()
         displayName: 'Mark Provision Success'
 
-- stage: ReportPipelineResult
-  displayName: 'Final Pipeline Result'
-  condition: always()
-  templateContext:
-    variables: ${{ 
-      parameters.environments.reduce(
-        {},
-        (acc, env) => set(acc, format('Provision_{0}_Succeeded', env.key), coalesce(
-          dependencies[format('ProvisionEnvLoop_Hosted_{0}', env.key)].outputs[format('ProvisionJob_{0}.Provision_{0}_Succeeded', env.key)],
-          dependencies[format('ProvisionEnvLoop_LocalFallback_{0}', env.key)].outputs[format('FallbackJob_{0}.Provision_{0}_Succeeded', env.key)],
-          dependencies[format('ProvisionEnvLoop_LocalFlagDriven_{0}', env.key)].outputs[format('FlagDrivenJob_{0}.Provision_{0}_Succeeded', env.key)]
-        ))
-      )
-    }}
-  jobs:
-    - job: EvaluateOverallResult
-      displayName: 'Evaluate Environment Provisioning Success'
-      steps:
-        - bash: |
-            echo "Checking success flags across environments..."
-            anySucceeded=false
-            for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
-              value="${!name}"
-              echo "$name=$value"
-              if [[ "$value" == "true" ]]; then
-                anySucceeded=true
-              fi
-            done
+- job: AggregateProvisionFlags
+  displayName: 'Aggregate Environment Provisioning Results'
+  steps:
+    - bash: |
+        echo "🔍 Collecting provisioning flags..."
 
-            if [[ "$anySucceeded" == "true" ]]; then
-              echo "✅ At least one provisioning route succeeded."
-            else
-              echo "❌ All routes failed — exiting with error."
-              exit 1
-            fi
-          displayName: 'Evaluate Flags Dynamically'
+        ${{ each env in parameters.environments }}:
+          envKey="${{ env.key }}"
+          echo "Evaluating $envKey..."
 
+          val="${{ coalesce(
+            dependencies['ProvisionEnvLoop_Hosted_${{ env.key }}'].outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+            dependencies['ProvisionEnvLoop_LocalFallback_${{ env.key }}'].outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+            dependencies['ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}'].outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
+          ) }}"
+
+          echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded]$val"
+      displayName: 'Export Success Flags from Job Outputs'
+
+- job: EvaluateOverallResult
+  dependsOn: AggregateProvisionFlags
+  displayName: 'Evaluate Provision Success'
+  steps:
+    - bash: |
+        echo "🔎 Checking exported success flags..."
+        anySucceeded=false
+
+        for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
+          val="${!name}"
+          echo "$name=$val"
+          if [[ "$val" == "true" ]]; then
+            anySucceeded=true
+            break
+          fi
+        done
+
+        if [[ "$anySucceeded" == "true" ]]; then
+          echo "✅ At least one environment succeeded."
+        else
+          echo "❌ All provisioning attempts failed."
+          exit 1
+        fi
+      displayName: 'Evaluate Provisioning Outcome'
