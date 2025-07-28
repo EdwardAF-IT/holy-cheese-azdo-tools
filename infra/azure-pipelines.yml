@@ -445,16 +445,14 @@ stages:
         displayName: 'Aggregate Flag for ${{ env.key }}'
         steps:
           - bash: |
-              echo "🔍 Aggregating status for '${{ env.key }}'..."
-
+              echo "Aggregating for ${{ env.key }}..."
               val="${{ coalesce(
                 dependencies['ProvisionEnvLoop_Hosted_${{ env.key }}'].outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
                 dependencies['ProvisionEnvLoop_LocalFallback_${{ env.key }}'].outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
                 dependencies['ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}'].outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
               ) }}"
-              
               echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded]$val"
-            displayName: 'Export Flag for ${{ env.key }}'
+            displayName: 'Export Flag'
 
 - job: EvaluateOverallResult
   dependsOn: AggregateProvisionFlags
