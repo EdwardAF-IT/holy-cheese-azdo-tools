@@ -457,27 +457,30 @@ stages:
               displayName: 'Set Flag for ${{ env.key }}'
 
 
-- job: EvaluateOverallResult
-  dependsOn: AggregateProvisionFlags
-  displayName: 'Evaluate Provision Success'
-  steps:
-    - bash: |
-        echo "🔎 Checking exported success flags..."
-        anySucceeded=false
+- stage: EvaluateProvisionResult
+  displayName: 'Evaluate Overall Environment Outcome'
+  dependsOn: ${{ parameters.environments.map(env => format('AggregateProvision_{0}', env.key)) }}
+  jobs:
+    - job: EvaluateOverallResult
+      displayName: 'Evaluate Provisioning Success'
+      steps:
+        - bash: |
+            echo "🔎 Checking exported flags..."
+            anySucceeded=false
 
-        for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
-          val="${!name}"
-          echo "$name=$val"
-          if [[ "$val" == "true" ]]; then
-            anySucceeded=true
-            break
-          fi
-        done
+            for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
+              val="${!name}"
+              echo "$name=$val"
+              if [[ "$val" == "true" ]]; then
+                anySucceeded=true
+              fi
+            done
 
-        if [[ "$anySucceeded" == "true" ]]; then
-          echo "✅ At least one environment succeeded."
-        else
-          echo "❌ All provisioning attempts failed."
-          exit 1
-        fi
-      displayName: 'Evaluate Provisioning Outcome'
+            if [[ "$anySucceeded" == "true" ]]; then
+              echo "✅ At least one environment succeeded."
+            else
+              echo "❌ All provisioning attempts failed."
+              exit 1
+            fi
+          displayName: 'Evaluate Flags'
+
