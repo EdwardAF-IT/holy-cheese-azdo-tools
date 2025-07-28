@@ -39,7 +39,7 @@ variables:
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
 
 stages:
-- stage: ProvisionSubscriptionInfra
+- stage: ProvisionSubscription_Hosted
   displayName: 'Prepare Subscription-Level Resources(Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   jobs:
@@ -77,7 +77,7 @@ stages:
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Hosted)'
 
-- stage: FallbackSubscriptionInfraLocal
+- stage: ProvisionSubscription_LocalFallback
   displayName: 'Fallback Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
@@ -126,9 +126,7 @@ stages:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
 
-
-
-- stage: ProvisionSubscriptionLocal
+- stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   jobs:
@@ -171,8 +169,7 @@ stages:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
 
-
-- stage: ProvisionSharedHosted
+- stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
   jobs:
@@ -208,7 +205,7 @@ stages:
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}' \
 
-- stage: FallbackSharedLocal
+- stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
@@ -247,8 +244,7 @@ stages:
             --parameters @$paramFilePath
       displayName: 'Deploy Shared Infrastructure (Local Fallback)'
 
-
-- stage: ProvisionShared
+- stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Provision Shared Resources'
   jobs:
@@ -286,9 +282,8 @@ stages:
             --parameters @$paramFilePath
       displayName: 'Deploy Shared Infrastructure (Refactored for Local Agent)'
 
-
 - ${{ each env in parameters.environments }}:
-  - stage: ProvisionHosted_${{ env.key }}
+  - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     jobs:
@@ -334,7 +329,7 @@ stages:
           script: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
         displayName: 'Mark Hosted Deploy Success'
 
-  - stage: Fallback_${{ env.key }}
+  - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
     condition: and(eq(variables.useHostedAgent, true), failed())
     jobs:
@@ -386,9 +381,8 @@ stages:
           inlineScript: |
             Write-Host "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
         displayName: 'Mark Fallback Active'
-  
-  
-  - stage: Deploy_${{ env.key }}
+    
+  - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     jobs:
@@ -432,5 +426,37 @@ stages:
               --parameters @$paramFilePath
         displayName: 'Deploy Environment Direct (${ env.key })'
 
-
+- stage: ReportPipelineResult
+  displayName: 'Final Pipeline Result'
+  dependsOn:
+    - ProvisionSubscription_Hosted
+    - ProvisionSubscription_LocalFallback
+    - ProvisionSubscription_LocalFlagDriven
+    - ProvisionShared_Hosted
+    - ProvisionShared_LocalFallback
+    - ProvisionShared_LocalFlagDriven
+    - ProvisionEnvLoop_Hosted
+    - ProvisionEnvLoop_LocalFallback
+    - ProvisionEnvLoop_LocalFlagDriven
+  condition: |
+    or(
+      succeeded('ProvisionSubscription_Hosted'),
+      succeeded('ProvisionSubscription_LocalFallback'),
+      succeeded('ProvisionSubscription_LocalFlagDriven')
+    ) and
+    or(
+      succeeded('ProvisionShared_Hosted'),
+      succeeded('ProvisionShared_LocalFallback'),
+      succeeded('ProvisionShared_LocalFlagDriven')
+    ) and
+    or(
+      succeeded('ProvisionEnvLoop_Hosted'),
+      succeeded('ProvisionEnvLoop_LocalFallback'),
+      succeeded('ProvisionEnvLoop_LocalFlagDriven')
+    )
+  jobs:
+  - job: MarkOverallSuccess
+    displayName: 'Mark Pipeline as Successful'
+    steps:
+    - script: echo "One complete provisioning path succeeded. Reporting overall success."
             
