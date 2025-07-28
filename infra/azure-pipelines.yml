@@ -42,9 +42,9 @@ stages:
 - stage: ProvisionSubscription_Hosted
   displayName: 'Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
-  continueOnError: true
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
+    continueOnError: true
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -100,9 +100,9 @@ stages:
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Fallback Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
-  continueOnError: true
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
+    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -167,9 +167,9 @@ stages:
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
-  continueOnError: true
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
+    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -227,9 +227,9 @@ stages:
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
-  continueOnError: true
   jobs:
   - job: ProvisionSharedResources_HostedAgent
+    continueOnError: true
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -281,9 +281,9 @@ stages:
 
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
-  continueOnError: true
   displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
+    continueOnError: true
   - job: ProvisionSharedResources_FallbackToLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
@@ -337,10 +337,10 @@ stages:
 
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
-  continueOnError: true
   displayName: 'Provision Shared Resources'
   jobs:
   - job: ProvisionSharedResources_SpecifiedLocalAgent
+    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -393,9 +393,9 @@ stages:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
-    continueOnError: true
     jobs:
     - job: ProvisionEnvResources_HostedAgent_${{ env.key }}
+      continueOnError: true
       name: ProvisionJob_${{ env.key }} 
       pool:
         name: ${{ parameters.hostedAgentName }}
@@ -456,9 +456,9 @@ stages:
 - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
   displayName: 'Fallback to Local Agent for ${{ env.key }}'
   condition: and(eq(variables.useHostedAgent, true), failed())
-  continueOnError: true
   jobs:
   - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
+    continueOnError: true
     name: FallbackJob_${{ env.key }}
     pool:
       name: ${{ parameters.localAgentName }}
@@ -518,9 +518,9 @@ stages:
 - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
   displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
   condition: eq(variables.useHostedAgent, false)
-  continueOnError: true
   jobs:
   - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
+    continueOnError: true
     name: FlagDrivenJob_${{ env.key }}
     pool:
       name: ${{ parameters.localAgentName }}
