@@ -438,23 +438,24 @@ stages:
     - ProvisionEnvLoop_Hosted
     - ProvisionEnvLoop_LocalFallback
     - ProvisionEnvLoop_LocalFlagDriven
-  condition: and(
-    or(
-      succeeded('ProvisionSubscription_Hosted'),
-      succeeded('ProvisionSubscription_LocalFallback'),
-      succeeded('ProvisionSubscription_LocalFlagDriven')
-    ),
-    or(
-      succeeded('ProvisionShared_Hosted'),
-      succeeded('ProvisionShared_LocalFallback'),
-      succeeded('ProvisionShared_LocalFlagDriven')
-    ),
-    or(
-      succeeded('ProvisionEnvLoop_Hosted'),
-      succeeded('ProvisionEnvLoop_LocalFallback'),
-      succeeded('ProvisionEnvLoop_LocalFlagDriven')
+  condition: >
+    and(
+      or(
+        succeeded('ProvisionSubscription_Hosted'),
+        succeeded('ProvisionSubscription_LocalFallback'),
+        succeeded('ProvisionSubscription_LocalFlagDriven')
+      ),
+      or(
+        succeeded('ProvisionShared_Hosted'),
+        succeeded('ProvisionShared_LocalFallback'),
+        succeeded('ProvisionShared_LocalFlagDriven')
+      ),
+      or(
+        succeeded('ProvisionEnvLoop_Hosted'),
+        succeeded('ProvisionEnvLoop_LocalFallback'),
+        succeeded('ProvisionEnvLoop_LocalFlagDriven')
+      )
     )
-  )
   jobs:
   - job: MarkOverallSuccess
     displayName: 'Mark Pipeline as Successful'
