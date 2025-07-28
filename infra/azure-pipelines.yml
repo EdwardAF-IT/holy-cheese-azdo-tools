@@ -440,23 +440,23 @@ stages:
 - stage: ReportPipelineResult
   displayName: 'Final Pipeline Result'
   condition: always()
+  variables:
+    ${{ each env in parameters.environments }}:
+      Provision_${{ env.key }}_Succeeded: ${{ coalesce(
+        dependencies.ProvisionEnvLoop_Hosted_${{ env.key }}.outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+        dependencies.ProvisionEnvLoop_LocalFallback_${{ env.key }}.outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+        dependencies.ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}.outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
+      ) }}
   jobs:
     - job: EvaluateOverallResult
       displayName: 'Evaluate Environment Provisioning Success'
-      env:
-      ${{ each env in parameters.environments }}:
-        Provision_${{ env.key }}_Succeeded: ${{ coalesce(
-          dependencies.ProvisionEnvLoop_Hosted_${{ env.key }}.outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
-          dependencies.ProvisionEnvLoop_LocalFallback_${{ env.key }}.outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
-          dependencies.ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}.outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
-        ) }}
       steps:
         - bash: |
             echo "Evaluating environment success flags..."
 
             anySucceeded=false
 
-            # Check all environment success flags — these are set dynamically
+            # Check all environment success flags — dynamically named vars
             for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
               value="${!name}"
               echo "$name=$value"
@@ -472,4 +472,3 @@ stages:
               exit 1
             fi
           displayName: 'Evaluate Environment Track Success'
-            
