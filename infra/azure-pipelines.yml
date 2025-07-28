@@ -444,12 +444,14 @@ stages:
     - job: EvaluateOverallResult
       displayName: 'Evaluate Environment Provisioning Success'
       variables: ${{ 
-        each env in parameters.environments:
-          format('Provision_{0}_Succeeded', env.key): coalesce(
-            dependencies[format('ProvisionEnvLoop_Hosted_{0}', env.key)].outputs[format('ProvisionJob_{0}.ProvisionSucceeded', env.key)],
-            dependencies[format('ProvisionEnvLoop_LocalFallback_{0}', env.key)].outputs[format('FallbackJob_{0}.ProvisionSucceeded', env.key)],
-            dependencies[format('ProvisionEnvLoop_LocalFlagDriven_{0}', env.key)].outputs[format('FlagDrivenJob_{0}.ProvisionSucceeded', env.key)]
-          )
+        parameters.environments.reduce(
+          {},
+          (acc, env) => set(acc, format('Provision_{0}_Succeeded', env.key), coalesce(
+            dependencies[format('ProvisionEnvLoop_Hosted_{0}', env.key)].outputs[format('ProvisionJob_{0}.Provision_{0}_Succeeded', env.key)],
+            dependencies[format('ProvisionEnvLoop_LocalFallback_{0}', env.key)].outputs[format('FallbackJob_{0}.Provision_{0}_Succeeded', env.key)],
+            dependencies[format('ProvisionEnvLoop_LocalFlagDriven_{0}', env.key)].outputs[format('FlagDrivenJob_{0}.Provision_{0}_Succeeded', env.key)]
+          ))
+        )
       }}
       steps:
         - bash: |
@@ -471,4 +473,3 @@ stages:
               exit 1
             fi
           displayName: 'Evaluate Environment Track Success'
-
