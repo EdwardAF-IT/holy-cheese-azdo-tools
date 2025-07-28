@@ -458,8 +458,8 @@ stages:
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
   - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-    continueOnError: true
     name: FallbackJob_${{ env.key }}
+    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -520,8 +520,8 @@ stages:
   condition: eq(variables.useHostedAgent, false)
   jobs:
   - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-    continueOnError: true
     name: FlagDrivenJob_${{ env.key }}
+    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
