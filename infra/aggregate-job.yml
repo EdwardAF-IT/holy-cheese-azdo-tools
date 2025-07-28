@@ -1,0 +1,19 @@
+# aggregate-job.yml
+parameters:
+  envKey: ''
+
+jobs:
+  - job: Aggregate_${{ parameters.envKey }}
+    displayName: 'Aggregate Flag for ${{ parameters.envKey }}'
+    steps:
+      - bash: |
+          echo "🔍 Aggregating status for '${{ parameters.envKey }}'..."
+
+          val="${{ coalesce(
+            dependencies['ProvisionEnvLoop_Hosted_${{ parameters.envKey }}'].outputs['ProvisionJob_${{ parameters.envKey }}.Provision_${{ parameters.envKey }}_Succeeded'],
+            dependencies['ProvisionEnvLoop_LocalFallback_${{ parameters.envKey }}'].outputs['FallbackJob_${{ parameters.envKey }}.Provision_${{ parameters.envKey }}_Succeeded'],
+            dependencies['ProvisionEnvLoop_LocalFlagDriven_${{ parameters.envKey }}'].outputs['FlagDrivenJob_${{ parameters.envKey }}.Provision_${{ parameters.envKey }}_Succeeded']
+          ) }}"
+          
+          echo "##vso[task.setvariable variable=Provision_${{ parameters.envKey }}_Succeeded]$val"
+        displayName: 'Export Success Flag'
