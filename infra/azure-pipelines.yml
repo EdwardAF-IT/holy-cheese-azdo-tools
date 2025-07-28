@@ -90,7 +90,7 @@ stages:
       condition: always()
       inputs:
         targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
@@ -146,7 +146,7 @@ stages:
           # Run deployment with @file syntax
           az deployment sub create `
             --location 'centralus' `
-            --template-file 'infra/subscription-baseline.bicep' `
+            --template-file '$(Build.SourcesDirectory)/infra/infra/subscription-baseline.bicep' `
             --parameters @$paramFilePath
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
@@ -157,7 +157,7 @@ stages:
       condition: always()
       inputs:
         targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
@@ -217,7 +217,7 @@ stages:
       condition: always()
       inputs:
         targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
@@ -273,7 +273,7 @@ stages:
       condition: always()
       inputs:
         targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
@@ -328,7 +328,7 @@ stages:
       condition: always()
       inputs:
         targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
@@ -383,7 +383,7 @@ stages:
       condition: always()
       inputs:
         targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
@@ -445,7 +445,7 @@ stages:
         condition: always()
         inputs:
           targetType: 'filePath'
-          filePath: 'scripts/Log-ProvisionResult.ps1'
+          filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
           arguments: >
             -EnvName $(envName)
             -HostType $(hostType)
@@ -506,7 +506,7 @@ stages:
         condition: always()
         inputs:
           targetType: 'filePath'
-          filePath: 'scripts/Log-ProvisionResult.ps1'
+          filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
           arguments: >
             -EnvName $(envName)
             -HostType $(hostType)
@@ -567,7 +567,7 @@ stages:
         condition: always()
         inputs:
           targetType: 'filePath'
-          filePath: 'scripts/Log-ProvisionResult.ps1'
+          filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
           arguments: >
             -EnvName $(envName)
             -HostType $(hostType)
@@ -586,7 +586,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          . 'scripts/Evaluate-ProvisionMatrix.ps1'
+          . '$(Build.SourcesDirectory)/infra/scripts/Evaluate-ProvisionMatrix.ps1'
           $file = "$(Pipeline.Workspace)/provision-results.json"
           $success = Evaluate-ProvisionMatrix -ResultFilePath $file
           if (-not $success) { exit 1 }
