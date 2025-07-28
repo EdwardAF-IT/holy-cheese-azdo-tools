@@ -456,7 +456,6 @@ stages:
       steps:
         - bash: |
             echo "Evaluating environment success flags..."
-
             anySucceeded=false
             for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
               value="${!name}"
@@ -465,7 +464,6 @@ stages:
                 anySucceeded=true
               fi
             done
-
             if [[ "$anySucceeded" == "true" ]]; then
               echo "✅ At least one provisioning path succeeded."
             else
@@ -473,3 +471,4 @@ stages:
               exit 1
             fi
           displayName: 'Evaluate Environment Track Success'
+
