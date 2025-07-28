@@ -94,7 +94,7 @@ stages:
           -EnvName $(envName)
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
-
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Fallback Subscription-Level Resources (Local Agent)'
@@ -160,6 +160,7 @@ stages:
           -EnvName $(envName)
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 
 - stage: ProvisionSubscription_LocalFlagDriven
@@ -219,7 +220,7 @@ stages:
           -EnvName $(envName)
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
-
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
@@ -274,6 +275,7 @@ stages:
           -EnvName $(envName)
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -328,7 +330,7 @@ stages:
           -EnvName $(envName)
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
-
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
@@ -382,6 +384,7 @@ stages:
           -EnvName $(envName)
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - ${{ each env in parameters.environments }}:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
@@ -443,7 +446,7 @@ stages:
             -EnvName $(envName)
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
-
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
@@ -503,7 +506,7 @@ stages:
             -EnvName $(envName)
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
-  
+            -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
       
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
@@ -563,6 +566,7 @@ stages:
             -EnvName $(envName)
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
+            -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
@@ -583,16 +587,27 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: 'ProvisionResult'
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+      displayName: 'Download Provision Result'
+    
     - task: PowerShell@2
       displayName: 'Run Provision Matrix Evaluation'
       inputs:
         targetType: 'inline'
         script: |
           . '$(Build.SourcesDirectory)/infra/scripts/Evaluate-ProvisionMatrix.ps1'
-          $file = "$(Pipeline.Workspace)/provision-results.json"
+          $file = "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+          if (-not (Test-Path $file)) {
+            Write-Host "##vso[task.complete result=SucceededWithIssues;]Result file missing — fallback may have failed"
+            exit 0
+          }
           $success = Evaluate-ProvisionMatrix -ResultFilePath $file
           if (-not $success) {
             Write-Host "##vso[task.complete result=Failed;]Provision matrix failed"
+            exit 1
           } else {
             Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
           }

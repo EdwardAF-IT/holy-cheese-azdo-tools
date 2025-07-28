@@ -1,7 +1,8 @@
-param(
+param (
   [string]$EnvName,
   [int]$HostType,
-  [int]$Result
+  [int]$Result,
+  [string]$ResultFilePath
 )
 
 $record = @{
@@ -10,14 +11,13 @@ $record = @{
   result = $Result
 }
 
-$file = "$(Pipeline.Workspace)/provision-results.json"
-
-if (-not (Test-Path $file)) {
-  "[]" | Set-Content $file
+if (-not (Test-Path $ResultFilePath)) {
+  "[]" | Set-Content $ResultFilePath
+  Write-Host "⚠️ Result file not found — initializing empty array."
 }
 
-$json = Get-Content $file | ConvertFrom-Json
+$json = Get-Content $ResultFilePath | ConvertFrom-Json
 $json += $record
-$json | ConvertTo-Json -Depth 3 | Set-Content $file
+$json | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
 
 Write-Host "✅ Logged result for env '$EnvName', host type $HostType, result $Result"
