@@ -43,7 +43,7 @@ stages:
   displayName: 'Prepare Subscription-Level Resources(Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   jobs:
-  - job: DeploySubscriptionBaseline
+  - job: ProvisionSubscriptionBaseline_HostedAgent
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -81,7 +81,7 @@ stages:
   displayName: 'Fallback Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
-  - job: DeploySubscriptionBaselineFallback
+  - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
     steps:
@@ -130,7 +130,7 @@ stages:
   displayName: 'Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   jobs:
-  - job: DeploySubscriptionBaselineLocal
+  - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
     steps:
@@ -173,7 +173,7 @@ stages:
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
   jobs:
-  - job: DeploySharedHosted
+  - job: ProvisionSharedResources_HostedAgent
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -209,7 +209,7 @@ stages:
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
-  - job: DeploySharedLocalFallback
+  - job: ProvisionSharedResources_FallbackToLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
     steps:
@@ -248,7 +248,7 @@ stages:
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Provision Shared Resources'
   jobs:
-  - job: DeploySharedInfra
+  - job: ProvisionSharedResources_SpecifiedLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
     steps:
@@ -287,7 +287,8 @@ stages:
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     jobs:
-    - job: DeployHosted_${{ env.key }}
+    - job: ProvisionEnvResources_HostedAgent_${{ env.key }}
+      name: ProvisionJob_${{ env.key }} 
       pool:
         name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
@@ -336,7 +337,8 @@ stages:
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
     condition: and(eq(variables.useHostedAgent, true), failed())
     jobs:
-    - job: DeployFallback_${{ env.key }}
+    - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
+      name: FallbackJob_${{ env.key }}
       pool:
         name: ${{ parameters.localAgentName }}
       steps:
@@ -391,7 +393,8 @@ stages:
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     jobs:
-    - job: DeployDirect_${{ env.key }}
+    - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
+      name: FlagDrivenJob_${{ env.key }}
       pool:
         name: ${{ parameters.localAgentName }}
       steps:
@@ -440,6 +443,13 @@ stages:
   jobs:
     - job: EvaluateOverallResult
       displayName: 'Evaluate Environment Provisioning Success'
+      env:
+      ${{ each env in parameters.environments }}:
+        Provision_${{ env.key }}_Succeeded: ${{ coalesce(
+          dependencies.ProvisionEnvLoop_Hosted_${{ env.key }}.outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+          dependencies.ProvisionEnvLoop_LocalFallback_${{ env.key }}.outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+          dependencies.ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}.outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
+        ) }}
       steps:
         - bash: |
             echo "Evaluating environment success flags..."
@@ -456,9 +466,9 @@ stages:
             done
 
             if [[ "$anySucceeded" == "true" ]]; then
-              echo "✅ At least one environment track succeeded. Pipeline passes."
+              echo "At least one environment track succeeded. Pipeline passes."
             else
-              echo "❌ No environment provisioning succeeded. Failing pipeline."
+              echo "No environment provisioning succeeded. Failing pipeline."
               exit 1
             fi
           displayName: 'Evaluate Environment Track Success'
