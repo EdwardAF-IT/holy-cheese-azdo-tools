@@ -566,7 +566,17 @@ stages:
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
-  dependsOn: [] 
+  dependsOn:
+    - ProvisionSubscription_Hosted
+    - ProvisionSubscription_LocalFallback
+    - ProvisionSubscription_LocalFlagDriven
+    - ProvisionShared_Hosted
+    - ProvisionShared_LocalFallback
+    - ProvisionShared_LocalFlagDriven
+    - ${{ each env in parameters.environments }}:
+        - ProvisionEnvLoop_Hosted_${{ env.key }}
+        - ProvisionEnvLoop_LocalFallback_${{ env.key }}
+        - ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
   condition: always()
   jobs:
   - job: VerifyProvisioning
