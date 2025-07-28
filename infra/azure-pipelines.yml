@@ -452,126 +452,126 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
 
 
-- stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
-  displayName: 'Fallback to Local Agent for ${{ env.key }}'
-  condition: and(eq(variables.useHostedAgent, true), failed())
-  jobs:
-  - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-    continueOnError: true
-    pool:
-      name: ${{ parameters.localAgentName }}
-    variables:
-      hostType: 1          # Local fallback
-      envName: ${{ env.key }}
-    steps:
-    - task: AzureCLI@2
-      name: DeployEnvFallbackInfra
-      inputs:
-        azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: ps
-        scriptLocation: inlineScript
-        inlineScript: |
-          Write-Host "Using agent: $env:AGENT_NAME"
-
-          # Build template path
-          $envKey = '${{ env.key }}'
-          $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-          Write-Host "Deploying $envKey using template: $templateFile"
-
-          # Construct parameters object
-          $paramObj = @{
-            appName         = @{ value = '${{ parameters.appName }}' }
-            environmentName = @{ value = '${{ env.key }}' }
-            location        = @{ value = '${{ env.value.location }}' }
-            tags            = @{ value = @{} }
-            subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
-          }
-
-          # Write parameter file
-          $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
-          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-
-          Write-Host "Parameter file contents:"
-          Get-Content $paramFilePath
-
-          # Deploy with parameter file
-          az deployment group create `
-            --resource-group '${{ env.value.resourceGroup }}' `
-            --template-file $templateFile `
-            --parameters @$paramFilePath
-      displayName: 'Deploy Environment Fallback (${ env.key })'
-
-    - task: PowerShell@2
-      displayName: 'Log Provision Result'
-      condition: always()
-      inputs:
-        targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
-        arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
-
-    
-- stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
-  displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
-  condition: eq(variables.useHostedAgent, false)
-  jobs:
-  - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-    continueOnError: true
-    pool:
-      name: ${{ parameters.localAgentName }}
-    variables:
-      hostType: 2          # Local specified
-      envName: ${{ env.key }}
-    steps:
-    - task: AzureCLI@2
-      name: DeployEnvDirectInfra
-      inputs:
-        azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: ps
-        scriptLocation: inlineScript
-        inlineScript: |
-          Write-Host "Using agent: $env:AGENT_NAME"
-
-          # Build template file path
-          $envKey = '${{ env.key }}'
-          $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-          Write-Host "Deploying $envKey using template: $templateFile"
-
-          # Construct parameter object
-          $paramObj = @{
-            appName         = @{ value = '${{ parameters.appName }}' }
-            environmentName = @{ value = $envKey }
-            location        = @{ value = '${{ env.value.location }}' }
-            tags            = @{ value = @{} }
-            subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
-          }
-
-          # Write parameters file
-          $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
-          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-
-          Write-Host "Parameter file contents:"
-          Get-Content $paramFilePath
-
-          # Run deployment
-          az deployment group create `
-            --resource-group '${{ env.value.resourceGroup }}' `
-            --template-file $templateFile `
-            --parameters @$paramFilePath
-      displayName: 'Deploy Environment Direct (${ env.key })'
-
-    - task: PowerShell@2
-      displayName: 'Log Provision Result'
-      condition: always()
-      inputs:
-        targetType: 'filePath'
-        filePath: 'scripts/Log-ProvisionResult.ps1'
-        arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+  - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
+    displayName: 'Fallback to Local Agent for ${{ env.key }}'
+    condition: and(eq(variables.useHostedAgent, true), failed())
+    jobs:
+    - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
+      continueOnError: true
+      pool:
+        name: ${{ parameters.localAgentName }}
+      variables:
+        hostType: 1          # Local fallback
+        envName: ${{ env.key }}
+      steps:
+      - task: AzureCLI@2
+        name: DeployEnvFallbackInfra
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: ps
+          scriptLocation: inlineScript
+          inlineScript: |
+            Write-Host "Using agent: $env:AGENT_NAME"
+  
+            # Build template path
+            $envKey = '${{ env.key }}'
+            $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+            Write-Host "Deploying $envKey using template: $templateFile"
+  
+            # Construct parameters object
+            $paramObj = @{
+              appName         = @{ value = '${{ parameters.appName }}' }
+              environmentName = @{ value = '${{ env.key }}' }
+              location        = @{ value = '${{ env.value.location }}' }
+              tags            = @{ value = @{} }
+              subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+            }
+  
+            # Write parameter file
+            $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
+            $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+  
+            Write-Host "Parameter file contents:"
+            Get-Content $paramFilePath
+  
+            # Deploy with parameter file
+            az deployment group create `
+              --resource-group '${{ env.value.resourceGroup }}' `
+              --template-file $templateFile `
+              --parameters @$paramFilePath
+        displayName: 'Deploy Environment Fallback (${ env.key })'
+  
+      - task: PowerShell@2
+        displayName: 'Log Provision Result'
+        condition: always()
+        inputs:
+          targetType: 'filePath'
+          filePath: 'scripts/Log-ProvisionResult.ps1'
+          arguments: >
+            -EnvName $(envName)
+            -HostType $(hostType)
+            -Result $([int]($LASTEXITCODE -eq 0))
+  
+      
+  - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+    displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
+    condition: eq(variables.useHostedAgent, false)
+    jobs:
+    - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
+      continueOnError: true
+      pool:
+        name: ${{ parameters.localAgentName }}
+      variables:
+        hostType: 2          # Local specified
+        envName: ${{ env.key }}
+      steps:
+      - task: AzureCLI@2
+        name: DeployEnvDirectInfra
+        inputs:
+          azureSubscription: 'HolyCheese-ServiceConnection'
+          scriptType: ps
+          scriptLocation: inlineScript
+          inlineScript: |
+            Write-Host "Using agent: $env:AGENT_NAME"
+  
+            # Build template file path
+            $envKey = '${{ env.key }}'
+            $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+            Write-Host "Deploying $envKey using template: $templateFile"
+  
+            # Construct parameter object
+            $paramObj = @{
+              appName         = @{ value = '${{ parameters.appName }}' }
+              environmentName = @{ value = $envKey }
+              location        = @{ value = '${{ env.value.location }}' }
+              tags            = @{ value = @{} }
+              subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+            }
+  
+            # Write parameters file
+            $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
+            $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+  
+            Write-Host "Parameter file contents:"
+            Get-Content $paramFilePath
+  
+            # Run deployment
+            az deployment group create `
+              --resource-group '${{ env.value.resourceGroup }}' `
+              --template-file $templateFile `
+              --parameters @$paramFilePath
+        displayName: 'Deploy Environment Direct (${ env.key })'
+  
+      - task: PowerShell@2
+        displayName: 'Log Provision Result'
+        condition: always()
+        inputs:
+          targetType: 'filePath'
+          filePath: 'scripts/Log-ProvisionResult.ps1'
+          arguments: >
+            -EnvName $(envName)
+            -HostType $(hostType)
+            -Result $([int]($LASTEXITCODE -eq 0))
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
