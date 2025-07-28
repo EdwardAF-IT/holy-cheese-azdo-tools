@@ -446,7 +446,7 @@ stages:
             -EnvName $(envName)
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+            -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
