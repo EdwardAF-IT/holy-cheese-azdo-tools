@@ -436,15 +436,7 @@ stages:
 
 - stage: ReportPipelineResult
   displayName: 'Final Pipeline Result'
-  dependsOn:
-    - ProvisionSubscription_Hosted
-    - ProvisionSubscription_LocalFallback
-    - ProvisionSubscription_LocalFlagDriven
-    - ProvisionShared_Hosted
-    - ProvisionShared_LocalFallback
-    - ProvisionShared_LocalFlagDriven
-    # No need to include env-loop stages (they're dynamic)
-
+  condition: always()
   jobs:
     - job: EvaluateOverallResult
       displayName: 'Evaluate Environment Provisioning Success'
