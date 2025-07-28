@@ -100,23 +100,32 @@ stages:
         inlineScript: |
           Write-Host "Provisioning baseline subscription infrastructure with local agent..."
     
+          # Extract environment suffixes
           $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
           $rgSuffixes += 'Shared'
-
-          $rgSuffixesJson = $rgSuffixes | ConvertTo-Json -Compress -Depth 1
-          $escapedRgSuffixes = "'" + $rgSuffixesJson.Replace("'", "''") + "'"
-          Write-Host "Escaped rgSuffixesJson: $escapedRgSuffixes"
     
+          # Build JSON parameters file
+          $paramObj = @{
+            rgSuffixes    = $rgSuffixes
+            projectPrefix = '${{ parameters.appName }}'
+            location      = 'centralus'
+          }
+    
+          $paramFilePath = Join-Path $env:TEMP "params.json"
+          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+    
+          Write-Host "Parameters written to $paramFilePath"
+          Get-Content $paramFilePath
+    
+          # Run deployment with @file syntax
           az deployment sub create `
             --location 'centralus' `
             --template-file 'infra/subscription-baseline.bicep' `
-            --parameters `
-              rgSuffixes=$escapedRgSuffixes `
-              projectPrefix='${{ parameters.appName }}' `
-              location='centralus'
+            --parameters @$paramFilePath
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
+
 
 
 - stage: ProvisionSubscriptionLocal
