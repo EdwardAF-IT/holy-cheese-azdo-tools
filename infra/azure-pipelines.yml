@@ -44,7 +44,6 @@ stages:
   condition: eq(variables.useHostedAgent, true)
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
-    continueOnError: true
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -102,7 +101,6 @@ stages:
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
-    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -169,7 +167,6 @@ stages:
   condition: eq(variables.useHostedAgent, false)
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
-    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -229,7 +226,6 @@ stages:
   displayName: 'Provision Shared Resources with Hosted Agent'
   jobs:
   - job: ProvisionSharedResources_HostedAgent
-    continueOnError: true
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -284,7 +280,6 @@ stages:
   displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
   - job: ProvisionSharedResources_FallbackToLocalAgent
-    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -340,7 +335,6 @@ stages:
   displayName: 'Provision Shared Resources'
   jobs:
   - job: ProvisionSharedResources_SpecifiedLocalAgent
-    continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -395,7 +389,6 @@ stages:
     condition: eq(variables.useHostedAgent, true)
     jobs:
     - job: ProvisionEnvResources_HostedAgent_${{ env.key }}
-      continueOnError: true
       pool:
         name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
@@ -457,7 +450,6 @@ stages:
     condition: and(eq(variables.useHostedAgent, true), failed())
     jobs:
     - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-      continueOnError: true
       pool:
         name: ${{ parameters.localAgentName }}
       variables:
@@ -518,7 +510,6 @@ stages:
     condition: eq(variables.useHostedAgent, false)
     jobs:
     - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-      continueOnError: true
       pool:
         name: ${{ parameters.localAgentName }}
       variables:
@@ -575,6 +566,7 @@ stages:
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
+  dependsOn: [] 
   condition: always()
   jobs:
   - job: VerifyProvisioning
@@ -589,4 +581,9 @@ stages:
           . '$(Build.SourcesDirectory)/infra/scripts/Evaluate-ProvisionMatrix.ps1'
           $file = "$(Pipeline.Workspace)/provision-results.json"
           $success = Evaluate-ProvisionMatrix -ResultFilePath $file
-          if (-not $success) { exit 1 }
+          if (-not $success) {
+            Write-Host "##vso[task.complete result=Failed;]Provision matrix failed"
+          } else {
+            Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
+          }
+
