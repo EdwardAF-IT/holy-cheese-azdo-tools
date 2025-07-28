@@ -440,13 +440,13 @@ stages:
 - stage: AggregateProvisionFlags
   displayName: 'Aggregate Environment Provisioning Results'
   jobs:
-    - job: AggregateProvisionFlags
-      displayName: 'Aggregate Success Flags'
-      steps:
-        ${{ each env in parameters.environments }}:
+    ${{ each env in parameters.environments }}:
+      - job: Aggregate_${{ env.key }}
+        displayName: 'Aggregate Flag for ${{ env.key }}'
+        steps:
           - bash: |
               echo "🔍 Aggregating status for '${{ env.key }}'..."
-      
+
               val="${{ coalesce(
                 dependencies['ProvisionEnvLoop_Hosted_${{ env.key }}'].outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
                 dependencies['ProvisionEnvLoop_LocalFallback_${{ env.key }}'].outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
@@ -454,8 +454,7 @@ stages:
               ) }}"
               
               echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded]$val"
-            displayName: 'Flag ${{ env.key }} Success'
-
+            displayName: 'Export Flag for ${{ env.key }}'
 
 - job: EvaluateOverallResult
   dependsOn: AggregateProvisionFlags
