@@ -103,7 +103,8 @@ stages:
           $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
           $rgSuffixes += 'Shared'
 
-          $rgSuffixesJson = $rgSuffixes | ConvertTo-Json -Compress
+          $rgSuffixesJson = $rgSuffixes | ConvertTo-Json -Compress -Depth 1
+          Write-Host "Final rgSuffixesJson: $rgSuffixesJson"
     
           az deployment sub create `
             --location 'centralus' `
