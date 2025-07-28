@@ -459,7 +459,6 @@ stages:
 
 - stage: EvaluateProvisionResult
   displayName: 'Evaluate Overall Environment Outcome'
-  dependsOn: ${{ parameters.environments.map(env => format('AggregateProvision_{0}', env.key)) }}
   jobs:
     - job: EvaluateOverallResult
       displayName: 'Evaluate Provisioning Success'
