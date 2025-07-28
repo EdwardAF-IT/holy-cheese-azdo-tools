@@ -106,9 +106,9 @@ stages:
     
           # Build JSON parameters file
           $paramObj = @{
-            rgSuffixes    = $rgSuffixes
-            projectPrefix = '${{ parameters.appName }}'
-            location      = 'centralus'
+            rgSuffixes = @{ value = $rgSuffixes }
+            projectPrefix = @{ value = '${{ parameters.appName }}' }
+            location = @{ value = 'centralus' }
           }
     
           $paramFilePath = Join-Path $env:TEMP "params.json"
