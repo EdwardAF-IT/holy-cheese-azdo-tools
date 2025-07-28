@@ -102,12 +102,14 @@ stages:
     
           $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
           $rgSuffixes += 'Shared'
+
+          $rgSuffixesJson = $rgSuffixes | ConvertTo-Json -Compress
     
           az deployment sub create `
             --location 'centralus' `
             --template-file 'infra/subscription-baseline.bicep' `
             --parameters `
-              rgSuffixes=$rgSuffixes `
+              rgSuffixes=rgSuffixesJson `
               projectPrefix='${{ parameters.appName }}' `
               location='centralus'
       env:
