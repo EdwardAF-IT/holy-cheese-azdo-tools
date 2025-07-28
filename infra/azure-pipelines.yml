@@ -518,7 +518,6 @@ stages:
   condition: eq(variables.useHostedAgent, false)
   jobs:
   - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-    name: FlagDrivenJob_${{ env.key }}
     continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
