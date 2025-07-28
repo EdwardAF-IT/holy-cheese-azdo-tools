@@ -328,6 +328,9 @@ stages:
           targetType: 'inline'
           script: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
         displayName: 'Mark Hosted Deploy Success'
+      - bash: echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded;isOutput=true]true"
+        condition: succeeded()
+        displayName: 'Mark Provision Success'
 
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent for ${{ env.key }}'
@@ -372,7 +375,6 @@ stages:
               --template-file $templateFile `
               --parameters @$paramFilePath
         displayName: 'Deploy Environment Fallback (${ env.key })'
-  
       - task: AzureCLI@2
         inputs:
           azureSubscription: 'HolyCheese-ServiceConnection'
@@ -381,6 +383,9 @@ stages:
           inlineScript: |
             Write-Host "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
         displayName: 'Mark Fallback Active'
+      - bash: echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded;isOutput=true]true"
+        condition: succeeded()
+        displayName: 'Mark Provision Success'
     
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
@@ -425,6 +430,9 @@ stages:
               --template-file $templateFile `
               --parameters @$paramFilePath
         displayName: 'Deploy Environment Direct (${ env.key })'
+      - bash: echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded;isOutput=true]true"
+        condition: succeeded()
+        displayName: 'Mark Provision Success'
 
 - stage: ReportPipelineResult
   displayName: 'Final Pipeline Result'
@@ -435,30 +443,31 @@ stages:
     - ProvisionShared_Hosted
     - ProvisionShared_LocalFallback
     - ProvisionShared_LocalFlagDriven
-    - ProvisionEnvLoop_Hosted
-    - ProvisionEnvLoop_LocalFallback
-    - ProvisionEnvLoop_LocalFlagDriven
-  condition: >
-    and(
-      or(
-        succeeded('ProvisionSubscription_Hosted'),
-        succeeded('ProvisionSubscription_LocalFallback'),
-        succeeded('ProvisionSubscription_LocalFlagDriven')
-      ),
-      or(
-        succeeded('ProvisionShared_Hosted'),
-        succeeded('ProvisionShared_LocalFallback'),
-        succeeded('ProvisionShared_LocalFlagDriven')
-      ),
-      or(
-        succeeded('ProvisionEnvLoop_Hosted'),
-        succeeded('ProvisionEnvLoop_LocalFallback'),
-        succeeded('ProvisionEnvLoop_LocalFlagDriven')
-      )
-    )
+    # No need to include env-loop stages (they're dynamic)
+
   jobs:
-  - job: MarkOverallSuccess
-    displayName: 'Mark Pipeline as Successful'
-    steps:
-    - script: echo "One complete provisioning path succeeded. Reporting overall success."
+    - job: EvaluateOverallResult
+      displayName: 'Evaluate Environment Provisioning Success'
+      steps:
+        - bash: |
+            echo "Evaluating environment success flags..."
+
+            anySucceeded=false
+
+            # Check all environment success flags — these are set dynamically
+            for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
+              value="${!name}"
+              echo "$name=$value"
+              if [[ "$value" == "true" ]]; then
+                anySucceeded=true
+              fi
+            done
+
+            if [[ "$anySucceeded" == "true" ]]; then
+              echo "✅ At least one environment track succeeded. Pipeline passes."
+            else
+              echo "❌ No environment provisioning succeeded. Failing pipeline."
+              exit 1
+            fi
+          displayName: 'Evaluate Environment Track Success'
             
