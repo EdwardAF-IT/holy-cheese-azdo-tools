@@ -99,6 +99,7 @@ stages:
         scriptLocation: inlineScript
         inlineScript: |
           Write-Host "Provisioning baseline subscription infrastructure with local agent..."
+    
           $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
           $rgSuffixes += 'Shared'
     
@@ -109,7 +110,10 @@ stages:
               rgSuffixes=$rgSuffixes `
               projectPrefix='${{ parameters.appName }}' `
               location='centralus'
+      env:
+        parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
+
 
 - stage: ProvisionSubscriptionLocal
   displayName: 'Provision Subscription Resources via Local Agent'
