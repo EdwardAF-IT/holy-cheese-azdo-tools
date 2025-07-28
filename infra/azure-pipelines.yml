@@ -440,25 +440,24 @@ stages:
 - stage: ReportPipelineResult
   displayName: 'Final Pipeline Result'
   condition: always()
-  variables: ${{ 
-    parameters.environments.reduce(
-      {},
-      (acc, env) => set(acc, format('Provision_{0}_Succeeded', env.key), coalesce(
-        dependencies[format('ProvisionEnvLoop_Hosted_{0}', env.key)].outputs[format('ProvisionJob_{0}.Provision_{0}_Succeeded', env.key)],
-        dependencies[format('ProvisionEnvLoop_LocalFallback_{0}', env.key)].outputs[format('FallbackJob_{0}.Provision_{0}_Succeeded', env.key)],
-        dependencies[format('ProvisionEnvLoop_LocalFlagDriven_{0}', env.key)].outputs[format('FlagDrivenJob_{0}.Provision_{0}_Succeeded', env.key)]
-      ))
-    )
-  }}
   jobs:
     - job: EvaluateOverallResult
       displayName: 'Evaluate Environment Provisioning Success'
+      variables:
+        provisionFlags: ${{ parameters.environments.reduce(
+          {},
+          (acc, env) => set(acc, format('Provision_{0}_Succeeded', env.key), coalesce(
+            dependencies[format('ProvisionEnvLoop_Hosted_{0}', env.key)].outputs[format('ProvisionJob_{0}.Provision_{0}_Succeeded', env.key)],
+            dependencies[format('ProvisionEnvLoop_LocalFallback_{0}', env.key)].outputs[format('FallbackJob_{0}.Provision_{0}_Succeeded', env.key)],
+            dependencies[format('ProvisionEnvLoop_LocalFlagDriven_{0}', env.key)].outputs[format('FlagDrivenJob_{0}.Provision_{0}_Succeeded', env.key)]
+          ))
+        ) }}
       steps:
         - bash: |
             echo "Evaluating environment success flags..."
 
             anySucceeded=false
-            for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
+            for name in $(env | grep '^provisionFlags\.Provision_.*_Succeeded' | cut -d= -f1); do
               value="${!name}"
               echo "$name=$value"
               if [[ "$value" == "true" ]]; then
@@ -467,9 +466,10 @@ stages:
             done
 
             if [[ "$anySucceeded" == "true" ]]; then
-              echo "✅ At least one environment track succeeded."
+              echo "✅ At least one provisioning path succeeded."
             else
-              echo "❌ No provisioning succeeded. Failing pipeline."
+              echo "❌ All provisioning paths failed."
               exit 1
             fi
           displayName: 'Evaluate Environment Track Success'
+
