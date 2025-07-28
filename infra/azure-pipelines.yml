@@ -40,28 +40,36 @@ variables:
 
 stages:
 - stage: ProvisionSubscription_Hosted
-  displayName: 'Prepare Subscription-Level Resources(Hosted Agent)'
+  displayName: 'Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
+  continueOnError: true
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
+    variables:
+      hostType: 0     # Hosted agent
+      envName: 'sub'  # Subscription-level resource
     steps:
     - task: Bash@3
+      name: SimulateFailure
       inputs:
         targetType: 'inline'
         script: |
           echo "Simulating hosted agent failure..."
           exit 1
       displayName: 'Simulate Hosted Failure'
+
     - task: Bash@3
       inputs:
         targetType: 'inline'
         script: |
           echo "Using agent: $(Agent.Name)"
       displayName: 'Agent Info'
+
     - task: AzureCLI@2
+      name: DeployInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: bash
@@ -77,13 +85,29 @@ stages:
               location='centralus'
       displayName: 'Deploy Subscription Baseline (Hosted)'
 
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
+
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Fallback Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
+  continueOnError: true
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 1     # Local fallback
+      envName: 'sub'  # Subscription-level
     steps:
     - task: Bash@3
       inputs:
@@ -92,31 +116,33 @@ stages:
           echo "Fallback triggered — using local agent"
           echo "##vso[task.setvariable variable=subscriptionAgentFallback;isOutput=true]true"
       displayName: 'Mark Fallback Active'
+
     - task: AzureCLI@2
+      name: DeployInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: ps
         scriptLocation: inlineScript
         inlineScript: |
           Write-Host "Provisioning baseline subscription infrastructure with local agent..."
-    
+
           # Extract environment suffixes
           $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
           $rgSuffixes += 'Shared'
-    
+
           # Build JSON parameters file
           $paramObj = @{
-            rgSuffixes = @{ value = $rgSuffixes }
-            projectPrefix = @{ value = '${{ parameters.appName }}' }
-            location = @{ value = 'centralus' }
+            rgSuffixes     = @{ value = $rgSuffixes }
+            projectPrefix  = @{ value = '${{ parameters.appName }}' }
+            location       = @{ value = 'centralus' }
           }
-    
+
           $paramFilePath = Join-Path $env:TEMP "params.json"
           $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-    
+
           Write-Host "Parameters written to $paramFilePath"
           Get-Content $paramFilePath
-    
+
           # Run deployment with @file syntax
           az deployment sub create `
             --location 'centralus' `
@@ -126,15 +152,32 @@ stages:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
 
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
+
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
+  continueOnError: true
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 2     # Local specified
+      envName: 'sub'  # Subscription-level
     steps:
     - task: AzureCLI@2
+      name: DeployInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: ps
@@ -148,9 +191,9 @@ stages:
 
           # Construct parameters
           $paramObj = @{
-            rgSuffixes = @{ value = $rgSuffixes }
+            rgSuffixes    = @{ value = $rgSuffixes }
             projectPrefix = @{ value = '${{ parameters.appName }}' }
-            location = @{ value = 'centralus' }
+            location      = @{ value = 'centralus' }
           }
 
           # Write parameter file
@@ -169,14 +212,30 @@ stages:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
 
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
+
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
+  continueOnError: true
   jobs:
   - job: ProvisionSharedResources_HostedAgent
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
+    variables:
+      hostType: 0     # Hosted agent
+      envName: 'shared'
     steps:
     - task: Bash@3
       inputs:
@@ -185,12 +244,15 @@ stages:
           echo "Simulating hosted agent failure..."
           exit 1
       displayName: 'Simulate Hosted Failure'
+
     - task: Bash@3
       inputs:
         targetType: 'inline'
         script: "echo \"Using agent: $(Agent.Name)\""
       displayName: 'Agent Info'
+
     - task: AzureCLI@2
+      name: DeploySharedInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: bash
@@ -203,17 +265,34 @@ stages:
               location='centralus' \
               resourceGroupName='${{ variables.sharedResourceGroup }}' \
               tags={} \
-              subscriptionId='${{ parameters.subscriptionId }}' \
+              subscriptionId='${{ parameters.subscriptionId }}'
+      displayName: 'Deploy Shared Infrastructure (Hosted)'
+
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
 
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
+  continueOnError: true
   displayName: 'Provision Shared Resources with Fallback Agent'
   jobs:
   - job: ProvisionSharedResources_FallbackToLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 1     # Local fallback
+      envName: 'shared'
     steps:
     - task: AzureCLI@2
+      name: DeploySharedFallbackInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: ps
@@ -244,15 +323,32 @@ stages:
             --parameters @$paramFilePath
       displayName: 'Deploy Shared Infrastructure (Local Fallback)'
 
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
+
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
+  continueOnError: true
   displayName: 'Provision Shared Resources'
   jobs:
   - job: ProvisionSharedResources_SpecifiedLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 2     # Local specified
+      envName: 'shared'
     steps:
     - task: AzureCLI@2
+      name: DeploySharedInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: ps
@@ -262,10 +358,10 @@ stages:
 
           # Build parameters object
           $paramObj = @{
-            location = @{ value = 'centralus' }
-            resourceGroupName = @{ value = '${{ variables.sharedResourceGroup }}' }
-            tags = @{ value = @{} }
-            subscriptionId = @{ value = '${{ parameters.subscriptionId }}' }
+            location           = @{ value = 'centralus' }
+            resourceGroupName  = @{ value = '${{ variables.sharedResourceGroup }}' }
+            tags               = @{ value = @{} }
+            subscriptionId     = @{ value = '${{ parameters.subscriptionId }}' }
           }
 
           # Write parameter file
@@ -282,16 +378,31 @@ stages:
             --parameters @$paramFilePath
       displayName: 'Deploy Shared Infrastructure (Refactored for Local Agent)'
 
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
 - ${{ each env in parameters.environments }}:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
+    continueOnError: true
     jobs:
     - job: ProvisionEnvResources_HostedAgent_${{ env.key }}
       name: ProvisionJob_${{ env.key }} 
       pool:
         name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
+      variables:
+        hostType: 0          # Hosted agent
+        envName: ${{ env.key }}
       steps:
       - task: Bash@3
         inputs:
@@ -300,12 +411,16 @@ stages:
             echo "Simulating hosted agent failure..."
             exit 1
         displayName: 'Simulate Hosted Failure'
+
       - task: Bash@3
         inputs:
           targetType: 'inline'
-          script: "echo \"Using agent: $(Agent.Name)\""
+          script: |
+            echo "Using agent: $(Agent.Name)"
         displayName: 'Agent Info'
+
       - task: AzureCLI@2
+        name: DeployEnvInfra
         inputs:
           azureSubscription: 'HolyCheese-ServiceConnection'
           scriptType: bash
@@ -313,7 +428,7 @@ stages:
           inlineScript: |
             envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
             echo "Deploying ${{ env.key }} using template: $envFile"
-          
+
             az deployment group create \
               --resource-group ${{ env.value.resourceGroup }} \
               --template-file $envFile \
@@ -324,162 +439,157 @@ stages:
                 tags={} \
                 subscriptionId='${{ parameters.subscriptionId }}' \
               --debug
-      - task: Bash@3
+        displayName: 'Deploy Environment Infrastructure (Hosted)'
+
+      - task: PowerShell@2
+        displayName: 'Log Provision Result'
+        condition: always()
         inputs:
-          targetType: 'inline'
-          script: echo "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]false"
-        displayName: 'Mark Hosted Deploy Success'
-      - bash: echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded;isOutput=true]true"
-        condition: succeeded()
-        displayName: 'Mark Provision Success'
-
-  - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
-    displayName: 'Fallback to Local Agent for ${{ env.key }}'
-    condition: and(eq(variables.useHostedAgent, true), failed())
-    jobs:
-    - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-      name: FallbackJob_${{ env.key }}
-      pool:
-        name: ${{ parameters.localAgentName }}
-      steps:
-      - task: AzureCLI@2
-        inputs:
-          azureSubscription: 'HolyCheese-ServiceConnection'
-          scriptType: ps
-          scriptLocation: inlineScript
-          inlineScript: |
-            Write-Host "Using agent: $env:AGENT_NAME"
-  
-            # Build template path
-            $envKey = '${{ env.key }}'
-            $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-            Write-Host "Deploying $envKey using template: $templateFile"
-  
-            # Construct parameters object
-            $paramObj = @{
-              appName = @{ value = '${{ parameters.appName }}' }
-              environmentName = @{ value = '${{ env.key }}' }
-              location = @{ value = '${{ env.value.location }}' }
-              tags = @{ value = @{} }
-              subscriptionId = @{ value = '${{ parameters.subscriptionId }}' }
-            }
-  
-            # Write parameter file
-            $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
-            $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-  
-            Write-Host "Parameter file contents:"
-            Get-Content $paramFilePath
-  
-            # Deploy with parameter file
-            az deployment group create `
-              --resource-group '${{ env.value.resourceGroup }}' `
-              --template-file $templateFile `
-              --parameters @$paramFilePath
-        displayName: 'Deploy Environment Fallback (${ env.key })'
-      - task: AzureCLI@2
-        inputs:
-          azureSubscription: 'HolyCheese-ServiceConnection'
-          scriptType: ps
-          scriptLocation: inlineScript
-          inlineScript: |
-            Write-Host "##vso[task.setvariable variable=${{ env.key }}AgentFallback;isOutput=true]true"
-        displayName: 'Mark Fallback Active'
-      - bash: echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded;isOutput=true]true"
-        condition: succeeded()
-        displayName: 'Mark Provision Success'
-    
-  - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
-    displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
-    condition: eq(variables.useHostedAgent, false)
-    jobs:
-    - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-      name: FlagDrivenJob_${{ env.key }}
-      pool:
-        name: ${{ parameters.localAgentName }}
-      steps:
-      - task: AzureCLI@2
-        inputs:
-          azureSubscription: 'HolyCheese-ServiceConnection'
-          scriptType: ps
-          scriptLocation: inlineScript
-          inlineScript: |
-            Write-Host "Using agent: $env:AGENT_NAME"
-  
-            # Build template file path
-            $envKey = '${{ env.key }}'
-            $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-            Write-Host "Deploying $envKey using template: $templateFile"
-  
-            # Construct parameter object
-            $paramObj = @{
-              appName = @{ value = '${{ parameters.appName }}' }
-              environmentName = @{ value = $envKey }
-              location = @{ value = '${{ env.value.location }}' }
-              tags = @{ value = @{} }
-              subscriptionId = @{ value = '${{ parameters.subscriptionId }}' }
-            }
-  
-            # Write parameters file
-            $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
-            $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-  
-            Write-Host "Parameter file contents:"
-            Get-Content $paramFilePath
-  
-            # Run deployment
-            az deployment group create `
-              --resource-group '${{ env.value.resourceGroup }}' `
-              --template-file $templateFile `
-              --parameters @$paramFilePath
-        displayName: 'Deploy Environment Direct (${ env.key })'
-      - bash: echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded;isOutput=true]true"
-        condition: succeeded()
-        displayName: 'Mark Provision Success'
-
-  ${{ each env in parameters.environments }}:
-    - stage: AggregateProvision_${{ env.key }}
-      displayName: 'Aggregate Provision Result for ${{ env.key }}'
-      jobs:
-        - job: AggregateResult_${{ env.key }}
-          displayName: 'Export Success Flag'
-          steps:
-            - bash: |
-                echo "🔍 Aggregating status for '${{ env.key }}'..."
-
-                val="${{ coalesce(
-                  dependencies['ProvisionEnvLoop_Hosted_${{ env.key }}'].outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
-                  dependencies['ProvisionEnvLoop_LocalFallback_${{ env.key }}'].outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
-                  dependencies['ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}'].outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
-                ) }}"
-
-                echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded]$val"
-              displayName: 'Set Flag for ${{ env.key }}'
+          targetType: 'filePath'
+          filePath: 'scripts/Log-ProvisionResult.ps1'
+          arguments: >
+            -EnvName $(envName)
+            -HostType $(hostType)
+            -Result $([int]($LASTEXITCODE -eq 0))
 
 
-- stage: EvaluateProvisionResult
-  displayName: 'Evaluate Overall Environment Outcome'
+- stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
+  displayName: 'Fallback to Local Agent for ${{ env.key }}'
+  condition: and(eq(variables.useHostedAgent, true), failed())
+  continueOnError: true
   jobs:
-    - job: EvaluateOverallResult
-      displayName: 'Evaluate Provisioning Success'
-      steps:
-        - bash: |
-            echo "🔎 Checking exported flags..."
-            anySucceeded=false
+  - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
+    name: FallbackJob_${{ env.key }}
+    pool:
+      name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 1          # Local fallback
+      envName: ${{ env.key }}
+    steps:
+    - task: AzureCLI@2
+      name: DeployEnvFallbackInfra
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "Using agent: $env:AGENT_NAME"
 
-            for name in $(env | grep '^Provision_.*_Succeeded' | cut -d= -f1); do
-              val="${!name}"
-              echo "$name=$val"
-              if [[ "$val" == "true" ]]; then
-                anySucceeded=true
-              fi
-            done
+          # Build template path
+          $envKey = '${{ env.key }}'
+          $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+          Write-Host "Deploying $envKey using template: $templateFile"
 
-            if [[ "$anySucceeded" == "true" ]]; then
-              echo "✅ At least one environment succeeded."
-            else
-              echo "❌ All provisioning attempts failed."
-              exit 1
-            fi
-          displayName: 'Evaluate Flags'
+          # Construct parameters object
+          $paramObj = @{
+            appName         = @{ value = '${{ parameters.appName }}' }
+            environmentName = @{ value = '${{ env.key }}' }
+            location        = @{ value = '${{ env.value.location }}' }
+            tags            = @{ value = @{} }
+            subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+          }
 
+          # Write parameter file
+          $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
+          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+
+          Write-Host "Parameter file contents:"
+          Get-Content $paramFilePath
+
+          # Deploy with parameter file
+          az deployment group create `
+            --resource-group '${{ env.value.resourceGroup }}' `
+            --template-file $templateFile `
+            --parameters @$paramFilePath
+      displayName: 'Deploy Environment Fallback (${ env.key })'
+
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
+    
+- stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+  displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
+  condition: eq(variables.useHostedAgent, false)
+  continueOnError: true
+  jobs:
+  - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
+    name: FlagDrivenJob_${{ env.key }}
+    pool:
+      name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 2          # Local specified
+      envName: ${{ env.key }}
+    steps:
+    - task: AzureCLI@2
+      name: DeployEnvDirectInfra
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "Using agent: $env:AGENT_NAME"
+
+          # Build template file path
+          $envKey = '${{ env.key }}'
+          $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+          Write-Host "Deploying $envKey using template: $templateFile"
+
+          # Construct parameter object
+          $paramObj = @{
+            appName         = @{ value = '${{ parameters.appName }}' }
+            environmentName = @{ value = $envKey }
+            location        = @{ value = '${{ env.value.location }}' }
+            tags            = @{ value = @{} }
+            subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+          }
+
+          # Write parameters file
+          $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
+          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+
+          Write-Host "Parameter file contents:"
+          Get-Content $paramFilePath
+
+          # Run deployment
+          az deployment group create `
+            --resource-group '${{ env.value.resourceGroup }}' `
+            --template-file $templateFile `
+            --parameters @$paramFilePath
+      displayName: 'Deploy Environment Direct (${ env.key })'
+
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: 'scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $([int]($LASTEXITCODE -eq 0))
+
+- stage: EvaluateProvisionMatrix
+  displayName: 'Evaluate Provisioning Final Result'
+  condition: always()
+  jobs:
+  - job: VerifyProvisioning
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: PowerShell@2
+      displayName: 'Run Provision Matrix Evaluation'
+      inputs:
+        targetType: 'inline'
+        script: |
+          . 'scripts/Evaluate-ProvisionMatrix.ps1'
+          $file = "$(Pipeline.Workspace)/provision-results.json"
+          $success = Evaluate-ProvisionMatrix -ResultFilePath $file
+          if (-not $success) { exit 1 }
