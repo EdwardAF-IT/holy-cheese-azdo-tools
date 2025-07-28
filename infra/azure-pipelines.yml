@@ -396,7 +396,6 @@ stages:
     jobs:
     - job: ProvisionEnvResources_HostedAgent_${{ env.key }}
       continueOnError: true
-      name: ProvisionJob_${{ env.key }} 
       pool:
         name: ${{ parameters.hostedAgentName }}
         vmImage: 'ubuntu-latest'
@@ -458,7 +457,6 @@ stages:
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
   - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-    name: FallbackJob_${{ env.key }}
     continueOnError: true
     pool:
       name: ${{ parameters.localAgentName }}
