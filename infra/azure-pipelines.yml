@@ -109,7 +109,7 @@ stages:
             --location 'centralus' `
             --template-file 'infra/subscription-baseline.bicep' `
             --parameters `
-              rgSuffixes=rgSuffixesJson `
+              rgSuffixes=$($rgSuffixesJson) `
               projectPrefix='${{ parameters.appName }}' `
               location='centralus'
       env:
