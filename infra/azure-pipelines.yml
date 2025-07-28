@@ -437,13 +437,24 @@ stages:
         condition: succeeded()
         displayName: 'Mark Provision Success'
 
-- stage: AggregateProvisionFlags
-  displayName: 'Aggregate Environment Provisioning Results'
-  jobs:
-    ${{ each env in parameters.environments }}:
-      - template: aggregate-job.yml
-        parameters:
-          envKey: ${{ env.key }}
+  ${{ each env in parameters.environments }}:
+    - stage: AggregateProvision_${{ env.key }}
+      displayName: 'Aggregate Provision Result for ${{ env.key }}'
+      jobs:
+        - job: AggregateResult_${{ env.key }}
+          displayName: 'Export Success Flag'
+          steps:
+            - bash: |
+                echo "🔍 Aggregating status for '${{ env.key }}'..."
+
+                val="${{ coalesce(
+                  dependencies['ProvisionEnvLoop_Hosted_${{ env.key }}'].outputs['ProvisionJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+                  dependencies['ProvisionEnvLoop_LocalFallback_${{ env.key }}'].outputs['FallbackJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded'],
+                  dependencies['ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}'].outputs['FlagDrivenJob_${{ env.key }}.Provision_${{ env.key }}_Succeeded']
+                ) }}"
+
+                echo "##vso[task.setvariable variable=Provision_${{ env.key }}_Succeeded]$val"
+              displayName: 'Set Flag for ${{ env.key }}'
 
 
 - job: EvaluateOverallResult
