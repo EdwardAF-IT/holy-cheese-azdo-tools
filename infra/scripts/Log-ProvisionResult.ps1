@@ -1,4 +1,4 @@
-param (
+﻿param (
   [string]$EnvName,
   [int]$HostType,
   [int]$Result,
