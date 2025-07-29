@@ -96,6 +96,15 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: Bash@3
+      displayName: 'Copy Result File to a Staging Location'
+      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+          cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
+
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -162,6 +171,15 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: Bash@3
+      displayName: 'Copy Result File to a Staging Location'
+      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+          cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
+
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
@@ -221,6 +239,15 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: Bash@3
+      displayName: 'Copy Result File to a Staging Location'
+      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+          cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
+
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
@@ -275,6 +302,15 @@ stages:
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+    - task: Bash@3
+      displayName: 'Copy Result File to a Staging Location'
+      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+          cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
 
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -331,6 +367,15 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: Bash@3
+      displayName: 'Copy Result File to a Staging Location'
+      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+          cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
+
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
@@ -384,6 +429,15 @@ stages:
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+    - task: Bash@3
+      displayName: 'Copy Result File to a Staging Location'
+      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+      inputs:
+        targetType: 'inline'
+        script: |
+          mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+          cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
 
 - ${{ each env in parameters.environments }}:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
@@ -447,6 +501,15 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+      - task: Bash@3
+        displayName: 'Copy Result File to a Staging Location'
+        condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+        inputs:
+          targetType: 'inline'
+          script: |
+            mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+            cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
+
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
@@ -506,6 +569,15 @@ stages:
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+      - task: Bash@3
+        displayName: 'Copy Result File to a Staging Location'
+        condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+        inputs:
+          targetType: 'inline'
+          script: |
+            mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+            cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
       
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
@@ -567,6 +639,15 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+      - task: Bash@3
+        displayName: 'Copy Result File to a Staging Location'
+        condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
+        inputs:
+          targetType: 'inline'
+          script: |
+            mkdir -p "$(Build.ArtifactStagingDirectory)/ProvisionResult"
+            cp "$(Pipeline.Workspace)/ProvisionResult/provision-results.json" "$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json"
+
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
@@ -588,8 +669,10 @@ stages:
     steps:
     - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        targetPath: '$(Build.ArtifactStagingDirectory)/ProvisionResult'
         artifactName: 'ProvisionResult'
+      condition: exists('$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json')
+      displayName: 'Publish final result file'
     
     - task: DownloadPipelineArtifact@2
       inputs:
