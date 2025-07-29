@@ -141,11 +141,11 @@ stages:
           Write-Host "Parameters written to $paramFilePath"
           Get-Content $paramFilePath
 
-          # Run deployment with @file syntax
-          # az deployment sub create `
-          #   --location 'centralus' `
-          #   --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
-          #   --parameters @$paramFilePath
+          Run deployment with @file syntax
+          az deployment sub create `
+            --location 'centralus' `
+            --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
+            --parameters @$paramFilePath
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
@@ -162,6 +162,10 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        artifactName: 'ProvisionResult'
 
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Provision Subscription Resources via Local Agent'
@@ -222,6 +226,11 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        artifactName: 'ProvisionResult'
+
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Provision Shared Resources with Hosted Agent'
@@ -276,6 +285,11 @@ stages:
           -HostType $(hostType)
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        artifactName: 'ProvisionResult'
 
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -332,6 +346,11 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        artifactName: 'ProvisionResult'
+
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Provision Shared Resources'
@@ -386,6 +405,11 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        artifactName: 'ProvisionResult'
+
 - ${{ each env in parameters.environments }}:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
     displayName: 'Deploy ${{ env.key }} via Hosted Agent'
@@ -435,6 +459,11 @@ stages:
                 subscriptionId='${{ parameters.subscriptionId }}' \
               --debug
         displayName: 'Deploy Environment Infrastructure (Hosted)'
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+          artifactName: 'ProvisionResult'
 
       - task: PowerShell@2
         displayName: 'Log Provision Result'
@@ -507,6 +536,11 @@ stages:
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+          artifactName: 'ProvisionResult'
       
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
@@ -567,6 +601,11 @@ stages:
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+          artifactName: 'ProvisionResult'
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
