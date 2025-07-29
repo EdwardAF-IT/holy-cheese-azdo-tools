@@ -11,7 +11,7 @@ $record = @{
   result = $Result
 }
 
-# Ensure folder exists
+# Ensure folder exists1
 $folder = Split-Path $ResultFilePath -Parent
 if (-not (Test-Path $folder)) {
   New-Item -ItemType Directory -Path $folder -Force | Out-Null
