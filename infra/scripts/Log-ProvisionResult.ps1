@@ -11,7 +11,7 @@ $record = @{
   result = $Result
 }
 
-# Ensure folder exists1
+# Ensure folder exists
 $folder = Split-Path $ResultFilePath -Parent
 if (-not (Test-Path $folder)) {
   New-Item -ItemType Directory -Path $folder -Force | Out-Null
@@ -19,6 +19,7 @@ if (-not (Test-Path $folder)) {
 }
 
 # Initialize file if it doesn't exist
+Write-Host $ResultFilePath
 if (-not (Test-Path $ResultFilePath)) {
   "[]" | Set-Content $ResultFilePath
   Write-Host "Result file not found — initializing empty array."
