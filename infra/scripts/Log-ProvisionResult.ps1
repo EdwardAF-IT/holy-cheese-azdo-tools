@@ -22,7 +22,7 @@ if (-not (Test-Path $folder)) {
 Write-Host ("Resultfilepath {0}" -f $ResultFilePath)
 if (-not (Test-Path $ResultFilePath)) {
   "[]" | Set-Content $ResultFilePath
-  Write-Host ("Result file not found — initializing empty array.")
+  Write-Host ("Result file not found.. initializing empty array.")
 }
 
 # Append record
