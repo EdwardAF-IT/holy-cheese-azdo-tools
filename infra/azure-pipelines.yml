@@ -677,20 +677,32 @@ stages:
 
     # Evaluate the merged result
     - task: PowerShell@2
-      displayName: 'Run Provision Matrix Evaluation'
+      displayName: 'Evaluate Provision Matrix'
       inputs:
         targetType: 'inline'
         script: |
           . '$(Build.SourcesDirectory)/infra/scripts/Evaluate-ProvisionMatrix.ps1'
-          $file = "$(Pipeline.Workspace)/Final/provision-results.json"
-          if (-not (Test-Path $file)) {
+    
+          $finalPath = "$(Pipeline.Workspace)/Final/provision-results.json"
+    
+          if (-not (Test-Path $finalPath)) {
             Write-Host "##vso[task.complete result=SucceededWithIssues;]Result file missing — fallback may have failed"
             exit 0
           }
-          $success = Evaluate-ProvisionMatrix -ResultFilePath $file
-          if (-not $success) {
+    
+          $results = Get-Content $finalPath | ConvertFrom-Json
+          $eval = Evaluate-ProvisionMatrix -Results $results
+    
+          if (-not $eval.Success) {
+            Write-Host "Provisioning matrix incomplete:"
+            if ($eval.MissingEnvs.Count -gt 0) {
+              Write-Host "  - Missing host coverage for envs: $($eval.MissingEnvs -join ', ')"
+            }
+            if (-not $eval.SharedPassed) { Write-Host "  - 'shared' stage did not pass." }
+            if (-not $eval.SubPassed)    { Write-Host "  - 'sub' stage did not pass." }
             Write-Host "##vso[task.complete result=Failed;]Provision matrix failed"
             exit 1
-          } else {
-            Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
           }
+    
+          Write-Host "Provisioning matrix is complete."
+          Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
