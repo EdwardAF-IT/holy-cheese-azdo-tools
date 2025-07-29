@@ -19,7 +19,7 @@ if (-not (Test-Path $folder)) {
 }
 
 # Initialize file if it doesn't exist
-Write-Host $ResultFilePath
+Write-Host ("Resultfilepath {0}" -f $ResultFilePath)
 if (-not (Test-Path $ResultFilePath)) {
   "[]" | Set-Content $ResultFilePath
   Write-Host "Result file not found — initializing empty array."

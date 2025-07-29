@@ -142,10 +142,10 @@ stages:
           Get-Content $paramFilePath
 
           # Run deployment with @file syntax
-          az deployment sub create `
-            --location 'centralus' `
-            --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
-            --parameters @$paramFilePath
+          # az deployment sub create `
+          #   --location 'centralus' `
+          #   --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
+          #   --parameters @$paramFilePath
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
