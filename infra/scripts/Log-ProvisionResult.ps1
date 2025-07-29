@@ -26,8 +26,8 @@ if (-not (Test-Path $ResultFilePath)) {
 }
 
 # Append record
-$json = Get-Content $ResultFilePath | ConvertFrom-Json
+$json = @(Get-Content $ResultFilePath | ConvertFrom-Json)
 $json += $record
-$json | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
+@($json) | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
 
 Write-Host ("Logged result for env '{0}', host type {1}, result {2}" -f $EnvName, $HostType, $Result)
