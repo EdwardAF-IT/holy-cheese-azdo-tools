@@ -96,21 +96,12 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PowerShell@2
-      displayName: 'Copy result file if it exists'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
       inputs:
-        targetType: 'inline'
-        script: |
-          $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-          if (Test-Path $filePath) {
-            New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-            Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-            Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-            Write-Host "Result file copied to staging."
-          } else {
-            Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-            Write-Host "Result file not found. Skipping copy."
-          }
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
@@ -178,21 +169,12 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PowerShell@2
-      displayName: 'Copy result file if it exists'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
       inputs:
-        targetType: 'inline'
-        script: |
-          $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-          if (Test-Path $filePath) {
-            New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-            Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-            Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-            Write-Host "Result file copied to staging."
-          } else {
-            Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-            Write-Host "Result file not found. Skipping copy."
-          }
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
@@ -253,21 +235,12 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PowerShell@2
-      displayName: 'Copy result file if it exists'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
       inputs:
-        targetType: 'inline'
-        script: |
-          $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-          if (Test-Path $filePath) {
-            New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-            Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-            Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-            Write-Host "Result file copied to staging."
-          } else {
-            Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-            Write-Host "Result file not found. Skipping copy."
-          }
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
           
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
@@ -324,21 +297,12 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PowerShell@2
-      displayName: 'Copy result file if it exists'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
       inputs:
-        targetType: 'inline'
-        script: |
-          $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-          if (Test-Path $filePath) {
-            New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-            Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-            Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-            Write-Host "Result file copied to staging."
-          } else {
-            Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-            Write-Host "Result file not found. Skipping copy."
-          }
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -395,21 +359,12 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PowerShell@2
-      displayName: 'Copy result file if it exists'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
       inputs:
-        targetType: 'inline'
-        script: |
-          $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-          if (Test-Path $filePath) {
-            New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-            Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-            Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-            Write-Host "Result file copied to staging."
-          } else {
-            Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-            Write-Host "Result file not found. Skipping copy."
-          }
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
@@ -465,21 +420,12 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PowerShell@2
-      displayName: 'Copy result file if it exists'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
       inputs:
-        targetType: 'inline'
-        script: |
-          $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-          if (Test-Path $filePath) {
-            New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-            Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-            Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-            Write-Host "Result file copied to staging."
-          } else {
-            Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-            Write-Host "Result file not found. Skipping copy."
-          }
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - ${{ each env in parameters.environments }}:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
@@ -543,21 +489,12 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-      - task: PowerShell@2
-        displayName: 'Copy result file if it exists'
+      - task: PublishPipelineArtifact@1
+        displayName: 'Publish Stage Result'
+        condition: always()
         inputs:
-          targetType: 'inline'
-          script: |
-            $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-            if (Test-Path $filePath) {
-              New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-              Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-              Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-              Write-Host "Result file copied to staging."
-            } else {
-              Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-              Write-Host "Result file not found. Skipping copy."
-            }
+          targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+          artifactName: 'ProvisionResult_$(System.StageName)'
 
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
@@ -619,21 +556,12 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-      - task: PowerShell@2
-        displayName: 'Copy result file if it exists'
+      - task: PublishPipelineArtifact@1
+        displayName: 'Publish Stage Result'
+        condition: always()
         inputs:
-          targetType: 'inline'
-          script: |
-            $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-            if (Test-Path $filePath) {
-              New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-              Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-              Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-              Write-Host "Result file copied to staging."
-            } else {
-              Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-              Write-Host "Result file not found. Skipping copy."
-            }
+          targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+          artifactName: 'ProvisionResult_$(System.StageName)'
       
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
@@ -695,21 +623,12 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-      - task: PowerShell@2
-        displayName: 'Copy result file if it exists'
+      - task: PublishPipelineArtifact@1
+        displayName: 'Publish Stage Result'
+        condition: always()
         inputs:
-          targetType: 'inline'
-          script: |
-            $filePath = "$(Pipeline.Workspace)\ProvisionResult\provision-results.json"
-            if (Test-Path $filePath) {
-              New-Item -ItemType Directory -Path "$(Build.ArtifactStagingDirectory)\ProvisionResult" -Force
-              Copy-Item -Path $filePath -Destination "$(Build.ArtifactStagingDirectory)\ProvisionResult\provision-results.json"
-              Write-Host "##vso[task.setvariable variable=shouldPublish]true"
-              Write-Host "Result file copied to staging."
-            } else {
-              Write-Host "##vso[task.setvariable variable=shouldPublish]false"
-              Write-Host "Result file not found. Skipping copy."
-            }
+          targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+          artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
@@ -730,25 +649,40 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)/ProvisionResult'
-        artifactName: 'ProvisionResult'
-      displayName: 'Publish final result file'
-    
+    # Download all stage-level artifacts
     - task: DownloadPipelineArtifact@2
+      displayName: 'Download All Stage Results'
       inputs:
-        artifactName: 'ProvisionResult'
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-      displayName: 'Download Provision Result'
-    
+        path: '$(Pipeline.Workspace)/AllResults'
+
+    # Merge all provision-results.json files
+    - task: PowerShell@2
+      displayName: 'Merge Provision Results'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $merged = @()
+          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
+              $content = Get-Content $_.FullName | ConvertFrom-Json
+              $merged += $content
+          }
+          $merged | ConvertTo-Json -Depth 10 | Set-Content "$(Pipeline.Workspace)/Final/provision-results.json"
+
+    # Publish the merged result file
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Final Aggregated Result'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/Final'
+        artifactName: 'ProvisionResult_Final'
+
+    # Evaluate the merged result
     - task: PowerShell@2
       displayName: 'Run Provision Matrix Evaluation'
       inputs:
         targetType: 'inline'
         script: |
           . '$(Build.SourcesDirectory)/infra/scripts/Evaluate-ProvisionMatrix.ps1'
-          $file = "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+          $file = "$(Pipeline.Workspace)/Final/provision-results.json"
           if (-not (Test-Path $file)) {
             Write-Host "##vso[task.complete result=SucceededWithIssues;]Result file missing — fallback may have failed"
             exit 0
@@ -760,4 +694,3 @@ stages:
           } else {
             Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
           }
-
