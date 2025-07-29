@@ -661,12 +661,19 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
+          $finalDir = "$(Pipeline.Workspace)/Final"
+          if (!(Test-Path $finalDir)) {
+              New-Item -Path $finalDir -ItemType Directory -Force | Out-Null
+          }
+    
           $merged = @()
           Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
               $content = Get-Content $_.FullName | ConvertFrom-Json
               $merged += $content
           }
-          $merged | ConvertTo-Json -Depth 10 | Set-Content "$(Pipeline.Workspace)/Final/provision-results.json"
+    
+          $mergedPath = Join-Path $finalDir 'provision-results.json'
+          $merged | ConvertTo-Json -Depth 10 | Set-Content $mergedPath
 
     # Publish the merged result file
     - task: PublishPipelineArtifact@1
