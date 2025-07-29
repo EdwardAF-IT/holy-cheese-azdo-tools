@@ -98,7 +98,6 @@ stages:
 
     - task: Bash@3
       displayName: 'Copy Result File to a Staging Location'
-      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
       inputs:
         targetType: 'inline'
         script: |
@@ -173,7 +172,6 @@ stages:
 
     - task: Bash@3
       displayName: 'Copy Result File to a Staging Location'
-      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
       inputs:
         targetType: 'inline'
         script: |
@@ -241,7 +239,6 @@ stages:
 
     - task: Bash@3
       displayName: 'Copy Result File to a Staging Location'
-      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
       inputs:
         targetType: 'inline'
         script: |
@@ -305,7 +302,6 @@ stages:
 
     - task: Bash@3
       displayName: 'Copy Result File to a Staging Location'
-      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
       inputs:
         targetType: 'inline'
         script: |
@@ -369,7 +365,6 @@ stages:
 
     - task: Bash@3
       displayName: 'Copy Result File to a Staging Location'
-      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
       inputs:
         targetType: 'inline'
         script: |
@@ -432,7 +427,6 @@ stages:
 
     - task: Bash@3
       displayName: 'Copy Result File to a Staging Location'
-      condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
       inputs:
         targetType: 'inline'
         script: |
@@ -503,7 +497,6 @@ stages:
 
       - task: Bash@3
         displayName: 'Copy Result File to a Staging Location'
-        condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
         inputs:
           targetType: 'inline'
           script: |
@@ -572,7 +565,6 @@ stages:
 
       - task: Bash@3
         displayName: 'Copy Result File to a Staging Location'
-        condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
         inputs:
           targetType: 'inline'
           script: |
@@ -641,7 +633,6 @@ stages:
 
       - task: Bash@3
         displayName: 'Copy Result File to a Staging Location'
-        condition: exists('$(Pipeline.Workspace)/ProvisionResult/provision-results.json')
         inputs:
           targetType: 'inline'
           script: |
@@ -671,7 +662,6 @@ stages:
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)/ProvisionResult'
         artifactName: 'ProvisionResult'
-      condition: exists('$(Build.ArtifactStagingDirectory)/ProvisionResult/provision-results.json')
       displayName: 'Publish final result file'
     
     - task: DownloadPipelineArtifact@2
