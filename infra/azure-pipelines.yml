@@ -40,7 +40,7 @@ variables:
 
 stages:
 - stage: ProvisionSubscription_Hosted
-  displayName: 'Prepare Subscription-Level Resources (Hosted Agent)'
+  displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
@@ -97,7 +97,7 @@ stages:
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
 - stage: ProvisionSubscription_LocalFallback
-  displayName: 'Fallback Subscription-Level Resources (Local Agent)'
+  displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
@@ -162,13 +162,8 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-        artifactName: 'ProvisionResult'
-
 - stage: ProvisionSubscription_LocalFlagDriven
-  displayName: 'Provision Subscription Resources via Local Agent'
+  displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
@@ -226,14 +221,9 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-        artifactName: 'ProvisionResult'
-
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
-  displayName: 'Provision Shared Resources with Hosted Agent'
+  displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
   jobs:
   - job: ProvisionSharedResources_HostedAgent
     pool:
@@ -286,14 +276,9 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-        artifactName: 'ProvisionResult'
-
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
-  displayName: 'Provision Shared Resources with Fallback Agent'
+  displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
   jobs:
   - job: ProvisionSharedResources_FallbackToLocalAgent
     pool:
@@ -346,14 +331,9 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-        artifactName: 'ProvisionResult'
-
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
-  displayName: 'Provision Shared Resources'
+  displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
   jobs:
   - job: ProvisionSharedResources_SpecifiedLocalAgent
     pool:
@@ -405,14 +385,9 @@ stages:
           -Result $([int]($LASTEXITCODE -eq 0))
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-        artifactName: 'ProvisionResult'
-
 - ${{ each env in parameters.environments }}:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
-    displayName: 'Deploy ${{ env.key }} via Hosted Agent'
+    displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     jobs:
     - job: ProvisionEnvResources_HostedAgent_${{ env.key }}
@@ -460,11 +435,6 @@ stages:
               --debug
         displayName: 'Deploy Environment Infrastructure (Hosted)'
 
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-          artifactName: 'ProvisionResult'
-
       - task: PowerShell@2
         displayName: 'Log Provision Result'
         condition: always()
@@ -478,7 +448,7 @@ stages:
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
-    displayName: 'Fallback to Local Agent for ${{ env.key }}'
+    displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
     jobs:
     - job: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
@@ -536,14 +506,9 @@ stages:
             -HostType $(hostType)
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-          artifactName: 'ProvisionResult'
       
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
-    displayName: 'Direct Deploy to ${{ env.key }} (Local Agent)'
+    displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     jobs:
     - job: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
@@ -602,11 +567,6 @@ stages:
             -Result $([int]($LASTEXITCODE -eq 0))
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
-          artifactName: 'ProvisionResult'
-
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
@@ -626,6 +586,11 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult/provision-results.json'
+        artifactName: 'ProvisionResult'
+    
     - task: DownloadPipelineArtifact@2
       inputs:
         artifactName: 'ProvisionResult'
