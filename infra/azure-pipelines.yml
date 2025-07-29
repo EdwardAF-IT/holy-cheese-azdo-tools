@@ -144,7 +144,7 @@ stages:
           # Run deployment with @file syntax
           az deployment sub create `
             --location 'centralus' `
-            --template-file '$(Build.SourcesDirectory)/infra/infra/subscription-baseline.bicep' `
+            --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
             --parameters @$paramFilePath
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
