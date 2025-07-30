@@ -655,6 +655,15 @@ stages:
       inputs:
         path: '$(Pipeline.Workspace)/AllResults'
 
+    - task: PowerShell@2
+      displayName: 'List Downloaded Artifacts'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse | ForEach-Object {
+            Write-Host "📦 Found: $($_.FullName)"
+          }
+
     # Merge all provision-results.json files
     - task: PowerShell@2
       displayName: 'Merge Provision Results'
