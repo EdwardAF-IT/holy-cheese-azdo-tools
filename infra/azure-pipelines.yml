@@ -655,6 +655,26 @@ stages:
       inputs:
         path: '$(Pipeline.Workspace)/AllResults'
 
+    # Merge all provision-results.json files
+    - task: PowerShell@2
+      displayName: 'Merge Provision Results'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $finalDir = "$(Pipeline.Workspace)/Final"
+          if (!(Test-Path $finalDir)) {
+              New-Item -Path $finalDir -ItemType Directory -Force | Out-Null
+          }
+    
+          $merged = @()
+          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
+              $content = Get-Content $_.FullName | ConvertFrom-Json
+              $merged += $content
+          }
+    
+          $mergedPath = Join-Path $finalDir 'provision-results.json'
+          $merged | ConvertTo-Json -Depth 10 | Set-Content $mergedPath
+
     - task: PowerShell@2
       displayName: 'Summarize Provision Results'
       inputs:
@@ -687,26 +707,6 @@ stages:
               Write-Host "    • HostType: $host → Result: $status"
             }
           }
-
-    # Merge all provision-results.json files
-    - task: PowerShell@2
-      displayName: 'Merge Provision Results'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $finalDir = "$(Pipeline.Workspace)/Final"
-          if (!(Test-Path $finalDir)) {
-              New-Item -Path $finalDir -ItemType Directory -Force | Out-Null
-          }
-    
-          $merged = @()
-          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
-              $content = Get-Content $_.FullName | ConvertFrom-Json
-              $merged += $content
-          }
-    
-          $mergedPath = Join-Path $finalDir 'provision-results.json'
-          $merged | ConvertTo-Json -Depth 10 | Set-Content $mergedPath
 
     # Publish the merged result file
     - task: PublishPipelineArtifact@1
