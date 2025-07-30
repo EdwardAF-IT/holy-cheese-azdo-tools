@@ -15,31 +15,29 @@ $record = @{
 $folder = Split-Path $ResultFilePath -Parent
 if (-not (Test-Path $folder)) {
   New-Item -ItemType Directory -Path $folder -Force | Out-Null
-  Write-Host ("Created missing folder: {0}" -f $folder)
+  Write-Host "📁 Created folder: $folder"
 }
 
 # Initialize file if it doesn't exist
-Write-Host ("Resultfilepath {0}" -f $ResultFilePath)
 if (-not (Test-Path $ResultFilePath)) {
   "[]" | Set-Content $ResultFilePath
-  Write-Host ("Result file not found.. initializing empty array.")
+  Write-Host "📄 Initialized result file: $ResultFilePath"
 }
 
-# Load and normalize existing content
+# Read and validate current content
 try {
-  $existingContent = Get-Content $ResultFilePath -Raw | ConvertFrom-Json
-  if ($existingContent -isnot [System.Collections.IEnumerable]) {
-    $existingContent = @($existingContent)
+  $existing = Get-Content $ResultFilePath -Raw | ConvertFrom-Json
+  if ($existing -isnot [System.Collections.IEnumerable]) {
+    $existing = @($existing)
   }
 } catch {
-  Write-Host "⚠️ Could not read existing content, starting fresh."
-  $existingContent = @()
+  Write-Host "⚠️ Failed to parse existing file — starting fresh"
+  $existing = @()
 }
 
-# Append the record
-$existingContent += $record
+$existing += $record
 
-# Save as clean JSON
-@($existingContent) | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
+# Write clean flattened array
+@($existing) | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
 
-Write-Host ("✅ Logged result for env '{0}', host type {1}, result {2}" -f $EnvName, $HostType, $Result)
+Write-Host "✅ Logged: Env=$EnvName, HostType=$HostType, Result=$Result"
