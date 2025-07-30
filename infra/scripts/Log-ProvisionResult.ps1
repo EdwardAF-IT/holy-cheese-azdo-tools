@@ -6,9 +6,9 @@ param (
 )
 
 $record = @{
-  env    = $EnvName
-  host   = $HostType
-  result = $Result
+  EnvName  = $EnvName
+  HostType = $HostType
+  Result   = $Result
 }
 
 # Ensure folder exists
@@ -25,9 +25,21 @@ if (-not (Test-Path $ResultFilePath)) {
   Write-Host ("Result file not found.. initializing empty array.")
 }
 
-# Append record
-$json = @(Get-Content $ResultFilePath | ConvertFrom-Json)
-$json += $record
-@($json) | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
+# Load and normalize existing content
+try {
+  $existingContent = Get-Content $ResultFilePath -Raw | ConvertFrom-Json
+  if ($existingContent -isnot [System.Collections.IEnumerable]) {
+    $existingContent = @($existingContent)
+  }
+} catch {
+  Write-Host "⚠️ Could not read existing content, starting fresh."
+  $existingContent = @()
+}
 
-Write-Host ("Logged result for env '{0}', host type {1}, result {2}" -f $EnvName, $HostType, $Result)
+# Append the record
+$existingContent += $record
+
+# Save as clean JSON
+@($existingContent) | ConvertTo-Json -Depth 3 | Set-Content $ResultFilePath
+
+Write-Host ("✅ Logged result for env '{0}', host type {1}, result {2}" -f $EnvName, $HostType, $Result)
