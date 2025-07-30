@@ -655,6 +655,39 @@ stages:
       inputs:
         path: '$(Pipeline.Workspace)/AllResults'
 
+    - task: PowerShell@2
+      displayName: 'Summarize Provision Results'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $resultsPath = "$(Pipeline.Workspace)/AllResults/merged/provision-results.json"
+    
+          if (!(Test-Path $resultsPath)) {
+            Write-Host "❌ Results file not found at $resultsPath"
+            exit 1
+          }
+    
+          $rawJson = Get-Content $resultsPath -Raw
+          $data = $null
+          try {
+            $data = $rawJson | ConvertFrom-Json
+          } catch {
+            Write-Host "❌ Failed to parse provision-results.json"
+            exit 1
+          }
+    
+          $grouped = $data | Group-Object EnvName
+    
+          Write-Host "`n✅ Summary of provision results:"
+          foreach ($envGroup in $grouped) {
+            Write-Host "🔹 Environment: $($envGroup.Name)"
+            foreach ($entry in $envGroup.Group) {
+              $host = if ($entry.HostType -eq 1) { "Local" } elseif ($entry.HostType -eq 2) { "Hosted" } else { "Unknown" }
+              $status = if ($entry.Result -eq 1) { "Success" } elseif ($entry.Result -eq 0) { "Failed" } else { "Unknown" }
+              Write-Host "    • HostType: $host → Result: $status"
+            }
+          }
+
     # Merge all provision-results.json files
     - task: PowerShell@2
       displayName: 'Merge Provision Results'
