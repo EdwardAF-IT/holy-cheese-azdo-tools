@@ -680,7 +680,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          $resultsPath = "$(Pipeline.Workspace)/AllResults/merged/provision-results.json"
+          $resultsPath = "$(Pipeline.Workspace)/Final/provision-results.json"
     
           if (!(Test-Path $resultsPath)) {
             Write-Host "❌ Results file not found at $resultsPath"
