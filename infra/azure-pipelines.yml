@@ -664,6 +664,23 @@ stages:
             Write-Host "📦 Found: $($_.FullName)"
           }
 
+    - task: PowerShell@2
+      displayName: 'Inspect Each Provision Result File'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "🕵️ Checking contents of provision-results.json files..."
+          $files = Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json
+          foreach ($file in $files) {
+            Write-Host "`n📄 File: $($file.FullName)"
+            try {
+              $content = Get-Content $file.FullName | ConvertFrom-Json
+              $content | Format-List
+            } catch {
+              Write-Host "❌ Failed to parse $($file.FullName)"
+            }
+          }
+
     # Merge all provision-results.json files
     - task: PowerShell@2
       displayName: 'Merge Provision Results'
