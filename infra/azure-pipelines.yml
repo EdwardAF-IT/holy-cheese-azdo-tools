@@ -82,6 +82,10 @@ stages:
               rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
               projectPrefix=${{ parameters.appName }} \
               location='centralus'
+
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
+
       displayName: 'Deploy Subscription Baseline (Hosted)'
 
     - task: PowerShell@2
@@ -93,7 +97,7 @@ stages:
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+          -Result $(DeployInfra.SubHostedExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
     - task: PublishPipelineArtifact@1
@@ -153,6 +157,9 @@ stages:
             --location 'centralus' `
             --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
             --parameters @$paramFilePath
+
+          $exitCode=$LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=DeployInfraExitCode;isOutput=true]$exitCode"
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Fallback)'
@@ -166,7 +173,7 @@ stages:
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+          -Result $(DeployInfra.DeployInfraExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
     - task: PublishPipelineArtifact@1
@@ -219,6 +226,10 @@ stages:
             --location 'centralus' `
             --template-file 'infra/subscription-baseline.bicep' `
             --parameters @$paramFilePath
+
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SubFlagExitCode;isOutput=true]$exitCode"
+
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
       displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
@@ -232,7 +243,7 @@ stages:
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+          -Result $(DeployInfra.SubFlagExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
     - task: PublishPipelineArtifact@1
@@ -283,6 +294,10 @@ stages:
               resourceGroupName='${{ variables.sharedResourceGroup }}' \
               tags={} \
               subscriptionId='${{ parameters.subscriptionId }}'
+
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SharedHostedExitCode;isOutput=true]$exitCode"
+
       displayName: 'Deploy Shared Infrastructure (Hosted)'
 
     - task: PowerShell@2
@@ -294,7 +309,7 @@ stages:
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+          -Result $(DeploySharedInfra.SharedHostedExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
     - task: PublishPipelineArtifact@1
@@ -345,6 +360,10 @@ stages:
             --resource-group '${{ variables.sharedResourceGroup }}' `
             --template-file 'infra/shared-infrastructure.bicep' `
             --parameters @$paramFilePath
+
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SharedFallbackExitCode;isOutput=true]$exitCode"
+
       displayName: 'Deploy Shared Infrastructure (Local Fallback)'
 
     - task: PowerShell@2
@@ -356,7 +375,7 @@ stages:
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+          -Result $(DeploySharedFallbackInfra.SharedFallbackExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
     - task: PublishPipelineArtifact@1
@@ -406,6 +425,10 @@ stages:
             --resource-group '${{ variables.sharedResourceGroup }}' `
             --template-file 'infra/shared-infrastructure.bicep' `
             --parameters @$paramFilePath
+
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SharedLocalExitCode;isOutput=true]$exitCode"
+
       displayName: 'Deploy Shared Infrastructure (Refactored for Local Agent)'
 
     - task: PowerShell@2
@@ -417,7 +440,7 @@ stages:
         arguments: >
           -EnvName $(envName)
           -HostType $(hostType)
-          -Result $([int]($LASTEXITCODE -eq 0))
+          -Result $(DeploySharedInfra.SharedLocalExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
     - task: PublishPipelineArtifact@1
@@ -473,8 +496,11 @@ stages:
                 environmentName='${{ env.key }}' \
                 location='${{ env.value.location }}' \
                 tags={} \
-                subscriptionId='${{ parameters.subscriptionId }}' \
-              --debug
+                subscriptionId='${{ parameters.subscriptionId }}'
+
+            $exitCode = $LASTEXITCODE
+            Write-Host "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
+
         displayName: 'Deploy Environment Infrastructure (Hosted)'
 
       - task: PowerShell@2
@@ -486,7 +512,7 @@ stages:
           arguments: >
             -EnvName $(envName)
             -HostType $(hostType)
-            -Result $([int]($LASTEXITCODE -eq 0))
+            -Result $(DeployEnvInfra.EnvHostedExitCode)
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
       - task: PublishPipelineArtifact@1
@@ -542,6 +568,10 @@ stages:
               --resource-group '${{ env.value.resourceGroup }}' `
               --template-file $templateFile `
               --parameters @$paramFilePath
+
+            $exitCode = $LASTEXITCODE
+            Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
+
         displayName: 'Deploy Environment Fallback (${ env.key })'
   
       - task: PowerShell@2
@@ -553,7 +583,7 @@ stages:
           arguments: >
             -EnvName $(envName)
             -HostType $(hostType)
-            -Result $([int]($LASTEXITCODE -eq 0))
+            -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
       - task: PublishPipelineArtifact@1
@@ -609,6 +639,10 @@ stages:
               --resource-group '${{ env.value.resourceGroup }}' `
               --template-file $templateFile `
               --parameters @$paramFilePath
+
+            $exitCode = $LASTEXITCODE
+            Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
+
         displayName: 'Deploy Environment Direct (${ env.key })'
   
       - task: PowerShell@2
@@ -620,7 +654,7 @@ stages:
           arguments: >
             -EnvName $(envName)
             -HostType $(hostType)
-            -Result $([int]($LASTEXITCODE -eq 0))
+            -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
             -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
       - task: PublishPipelineArtifact@1
