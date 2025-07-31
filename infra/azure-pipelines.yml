@@ -821,3 +821,4 @@ stages:
     
           Write-Host "Provisioning matrix is complete."
           Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
+          exit 0
