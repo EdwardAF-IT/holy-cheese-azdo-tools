@@ -747,7 +747,7 @@ stages:
             exit 1
           }
     
-          Write-Host "`n📄 Raw JSON from $resultsPath:"
+          Write-Host "`n📄 Raw JSON from ${resultsPath}:"
           Get-Content $resultsPath -Raw
 
     - task: PowerShell@2
