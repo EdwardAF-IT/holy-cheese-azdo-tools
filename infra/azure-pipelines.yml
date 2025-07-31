@@ -39,7 +39,7 @@ parameters:
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
-  sharedEnvironmentDisplayName: '${{ parameters.appName }}-Shared
+  sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
 
 stages:
 - stage: ProvisionSubscription_Hosted
