@@ -470,231 +470,231 @@ stages:
               artifactName: 'ProvisionResult_$(System.StageName)'
 
 - ${{ each env in parameters.environments }}:
-- stage: ProvisionEnvLoop_Hosted_${{ env.key }}
-  displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
-  condition: eq(variables.useHostedAgent, true)
-  jobs:
-  - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
-    environment: ${{ env.value.environmentDisplayName }}
-    pool:
-      name: ${{ parameters.hostedAgentName }}
-      vmImage: 'ubuntu-latest'
-    variables:
-      hostType: 0          # Hosted agent
-      envName: ${{ env.key }}
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: Bash@3
-            inputs:
-              targetType: 'inline'
-              script: |
-                echo "Using agent: $(Agent.Name)"
-            displayName: 'Agent Info'
-
-          - task: AzureCLI@2
-            name: DeployEnvInfra
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
-                echo "Deploying ${{ env.key }} using template: $envFile"
-
-                az group update \
-                  --name ${{ env.value.resourceGroup }} \
-                  --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
-
-                az deployment group create \
-                  --resource-group ${{ env.value.resourceGroup }} \
-                  --template-file $envFile \
-                  --parameters \
-                    appName=${{ parameters.appName }} \
-                    environmentName='${{ env.key }}' \
-                    location='${{ env.value.location }}' \
-                    tags={} \
-                    subscriptionId='${{ parameters.subscriptionId }}'
-
-                $exitCode = $LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Environment Infrastructure (Hosted)'
-
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployEnvInfra.EnvHostedExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
-
-- stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
-  displayName: 'Env ${{ env.key }} Fallback to Local Agent'
-  condition: and(eq(variables.useHostedAgent, true), failed())
-  jobs:
-  - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-    environment: ${{ env.value.environmentDisplayName }}
-    pool:
-      name: ${{ parameters.localAgentName }}
-    variables:
-      hostType: 1          # Local fallback
-      envName: ${{ env.key }}
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureCLI@2
-            name: DeployEnvFallbackInfra
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: ps
-              scriptLocation: inlineScript
-              inlineScript: |
-                Write-Host "Using agent: $env:AGENT_NAME"
-
-                # Build template path
-                $envKey = '${{ env.key }}'
-                $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-                Write-Host "Deploying $envKey using template: $templateFile"
-
-                # Construct parameters object
-                $paramObj = @{
-                  appName         = @{ value = '${{ parameters.appName }}' }
-                  environmentName = @{ value = '${{ env.key }}' }
-                  location        = @{ value = '${{ env.value.location }}' }
-                  tags            = @{ value = @{} }
-                  subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
-                }
-
-                # Write parameter file
-                $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
-                $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-
-                Write-Host "Parameter file contents:"
-                Get-Content $paramFilePath
-
-                # Deploy with parameter file
-                az group update `
-                  --name ${{ env.value.resourceGroup }} `
-                  --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
-
-                az deployment group create `
-                  --resource-group '${{ env.value.resourceGroup }}' `
-                  --template-file $templateFile `
-                  --parameters @$paramFilePath
-
-                $exitCode = $LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Environment Fallback (${ env.key })'
-
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
-      
-- stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
-  displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
-  condition: eq(variables.useHostedAgent, false)
-  jobs:
-  - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-    environment: ${{ env.value.environmentDisplayName }}
-    pool:
-      name: ${{ parameters.localAgentName }}
-    variables:
-      hostType: 2          # Local specified
-      envName: ${{ env.key }}
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureCLI@2
-            name: DeployEnvDirectInfra
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: ps
-              scriptLocation: inlineScript
-              inlineScript: |
-                Write-Host "Using agent: $env:AGENT_NAME"
-
-                # Build template file path
-                $envKey = '${{ env.key }}'
-                $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-                Write-Host "Deploying $envKey using template: $templateFile"
-
-                # Construct parameter object
-                $paramObj = @{
-                  appName         = @{ value = '${{ parameters.appName }}' }
-                  environmentName = @{ value = $envKey }
-                  location        = @{ value = '${{ env.value.location }}' }
-                  tags            = @{ value = @{} }
-                  subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
-                }
-
-                # Write parameters file
-                $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
-                $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-
-                Write-Host "Parameter file contents:"
-                Get-Content $paramFilePath
-
-                # Run deployment
-                az group update `
-                  --name ${{ env.value.resourceGroup }} `
-                  --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
-
-                az deployment group create `
-                  --resource-group '${{ env.value.resourceGroup }}' `
-                  --template-file $templateFile `
-                  --parameters @$paramFilePath
-
-                $exitCode = $LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Environment Direct (${ env.key })'
-
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
+  - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
+    displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
+    condition: eq(variables.useHostedAgent, true)
+    jobs:
+    - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
+      pool:
+        name: ${{ parameters.hostedAgentName }}
+        vmImage: 'ubuntu-latest'
+      variables:
+        hostType: 0          # Hosted agent
+        envName: ${{ env.key }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: Bash@3
+              inputs:
+                targetType: 'inline'
+                script: |
+                  echo "Using agent: $(Agent.Name)"
+              displayName: 'Agent Info'
+  
+            - task: AzureCLI@2
+              name: DeployEnvInfra
+              inputs:
+                azureSubscription: 'HolyCheese-ServiceConnection'
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+                  echo "Deploying ${{ env.key }} using template: $envFile"
+  
+                  az group update \
+                    --name ${{ env.value.resourceGroup }} \
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+  
+                  az deployment group create \
+                    --resource-group ${{ env.value.resourceGroup }} \
+                    --template-file $envFile \
+                    --parameters \
+                      appName=${{ parameters.appName }} \
+                      environmentName='${{ env.key }}' \
+                      location='${{ env.value.location }}' \
+                      tags={} \
+                      subscriptionId='${{ parameters.subscriptionId }}'
+  
+                  $exitCode = $LASTEXITCODE
+                  Write-Host "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
+              displayName: 'Deploy Environment Infrastructure (Hosted)'
+  
+            - task: PowerShell@2
+              displayName: 'Log Provision Result'
+              condition: always()
+              inputs:
+                targetType: 'filePath'
+                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+                arguments: >
+                  -EnvName $(envName)
+                  -HostType $(hostType)
+                  -Result $(DeployEnvInfra.EnvHostedExitCode)
+                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+  
+            - task: PublishPipelineArtifact@1
+              displayName: 'Publish Stage Result'
+              condition: always()
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: 'ProvisionResult_$(System.StageName)'
+  
+  - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
+    displayName: 'Env ${{ env.key }} Fallback to Local Agent'
+    condition: and(eq(variables.useHostedAgent, true), failed())
+    jobs:
+    - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
+      pool:
+        name: ${{ parameters.localAgentName }}
+      variables:
+        hostType: 1          # Local fallback
+        envName: ${{ env.key }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: AzureCLI@2
+              name: DeployEnvFallbackInfra
+              inputs:
+                azureSubscription: 'HolyCheese-ServiceConnection'
+                scriptType: ps
+                scriptLocation: inlineScript
+                inlineScript: |
+                  Write-Host "Using agent: $env:AGENT_NAME"
+  
+                  # Build template path
+                  $envKey = '${{ env.key }}'
+                  $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+                  Write-Host "Deploying $envKey using template: $templateFile"
+  
+                  # Construct parameters object
+                  $paramObj = @{
+                    appName         = @{ value = '${{ parameters.appName }}' }
+                    environmentName = @{ value = '${{ env.key }}' }
+                    location        = @{ value = '${{ env.value.location }}' }
+                    tags            = @{ value = @{} }
+                    subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+                  }
+  
+                  # Write parameter file
+                  $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
+                  $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+  
+                  Write-Host "Parameter file contents:"
+                  Get-Content $paramFilePath
+  
+                  # Deploy with parameter file
+                  az group update `
+                    --name ${{ env.value.resourceGroup }} `
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+  
+                  az deployment group create `
+                    --resource-group '${{ env.value.resourceGroup }}' `
+                    --template-file $templateFile `
+                    --parameters @$paramFilePath
+  
+                  $exitCode = $LASTEXITCODE
+                  Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
+              displayName: 'Deploy Environment Fallback (${ env.key })'
+  
+            - task: PowerShell@2
+              displayName: 'Log Provision Result'
+              condition: always()
+              inputs:
+                targetType: 'filePath'
+                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+                arguments: >
+                  -EnvName $(envName)
+                  -HostType $(hostType)
+                  -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
+                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+  
+            - task: PublishPipelineArtifact@1
+              displayName: 'Publish Stage Result'
+              condition: always()
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: 'ProvisionResult_$(System.StageName)'
+        
+  - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+    displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
+    condition: eq(variables.useHostedAgent, false)
+    jobs:
+    - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
+      pool:
+        name: ${{ parameters.localAgentName }}
+      variables:
+        hostType: 2          # Local specified
+        envName: ${{ env.key }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: AzureCLI@2
+              name: DeployEnvDirectInfra
+              inputs:
+                azureSubscription: 'HolyCheese-ServiceConnection'
+                scriptType: ps
+                scriptLocation: inlineScript
+                inlineScript: |
+                  Write-Host "Using agent: $env:AGENT_NAME"
+  
+                  # Build template file path
+                  $envKey = '${{ env.key }}'
+                  $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+                  Write-Host "Deploying $envKey using template: $templateFile"
+  
+                  # Construct parameter object
+                  $paramObj = @{
+                    appName         = @{ value = '${{ parameters.appName }}' }
+                    environmentName = @{ value = $envKey }
+                    location        = @{ value = '${{ env.value.location }}' }
+                    tags            = @{ value = @{} }
+                    subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+                  }
+  
+                  # Write parameters file
+                  $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
+                  $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+  
+                  Write-Host "Parameter file contents:"
+                  Get-Content $paramFilePath
+  
+                  # Run deployment
+                  az group update `
+                    --name ${{ env.value.resourceGroup }} `
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+  
+                  az deployment group create `
+                    --resource-group '${{ env.value.resourceGroup }}' `
+                    --template-file $templateFile `
+                    --parameters @$paramFilePath
+  
+                  $exitCode = $LASTEXITCODE
+                  Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
+              displayName: 'Deploy Environment Direct (${ env.key })'
+  
+            - task: PowerShell@2
+              displayName: 'Log Provision Result'
+              condition: always()
+              inputs:
+                targetType: 'filePath'
+                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+                arguments: >
+                  -EnvName $(envName)
+                  -HostType $(hostType)
+                  -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
+                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+  
+            - task: PublishPipelineArtifact@1
+              displayName: 'Publish Stage Result'
+              condition: always()
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
