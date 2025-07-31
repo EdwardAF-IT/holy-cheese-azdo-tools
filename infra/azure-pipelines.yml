@@ -736,6 +736,21 @@ stages:
           $merged | ConvertTo-Json -Depth 10 | Set-Content $mergedPath
 
     - task: PowerShell@2
+      displayName: 'Print Merged JSON File Contents for Validation'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $resultsPath = "$(Pipeline.Workspace)/Final/provision-results.json"
+    
+          if (!(Test-Path $resultsPath)) {
+            Write-Host "❌ Results file not found at $resultsPath"
+            exit 1
+          }
+    
+          Write-Host "`n📄 Raw JSON from $resultsPath:"
+          Get-Content $resultsPath -Raw
+
+    - task: PowerShell@2
       displayName: 'Summarize Provision Results'
       inputs:
         targetType: 'inline'
