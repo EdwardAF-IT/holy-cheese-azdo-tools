@@ -15,7 +15,7 @@ function Evaluate-ProvisionMatrix {
   # Group results by environment, excluding 'shared' and 'sub'
   # These are the environments expected to appear in triads
   # ───────────────────────────────────────────────────────────────
-  $envGroups = $Results | Where-Object { $_.env -notin $SPECIAL_ENVS } |
+  $envGroups = $Results | Where-Object { $_.EnvName -notin $SPECIAL_ENVS } |
                Group-Object -Property env
 
   # ───────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ function Evaluate-ProvisionMatrix {
   # Success can come from any host type (hosted, local, personal)
   # ───────────────────────────────────────────────────────────────
   $envsWithSuccess = $envGroups | Where-Object {
-    ($_.Group | Where-Object { $_.result -eq $SUCCESS_VALUE }).Count -gt 0
+    ($_.Group | Where-Object { $_.Result -eq $SUCCESS_VALUE }).Count -gt 0
   } | Select-Object -ExpandProperty Name
 
   # ✔ Check that all triad environments are represented with success
@@ -33,8 +33,8 @@ function Evaluate-ProvisionMatrix {
   # Independently confirm success for 'shared' and 'sub'
   # These are essential standalone stages, not part of triads
   # ───────────────────────────────────────────────────────────────
-  $sharedOK = $Results | Where-Object { $_.env -eq 'shared' -and $_.result -eq $SUCCESS_VALUE }
-  $subOK    = $Results | Where-Object { $_.env -eq 'sub' -and $_.result -eq $SUCCESS_VALUE }
+  $sharedOK = $Results | Where-Object { $_.EnvName -eq 'shared' -and $_.Result -eq $SUCCESS_VALUE }
+  $subOK    = $Results | Where-Object { $_.EnvName -eq 'sub' -and $_.Result -eq $SUCCESS_VALUE }
 
   # ───────────────────────────────────────────────────────────────
   # Return an object with diagnostics and success state

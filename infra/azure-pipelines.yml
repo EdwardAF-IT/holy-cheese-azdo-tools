@@ -778,7 +778,7 @@ stages:
             Write-Host "🔹 Environment: $($envGroup.Name)"
             foreach ($entry in $envGroup.Group) {
               $hostLabel = if ($entry.HostType -eq 1) { "Local" } elseif ($entry.HostType -eq 2) { "Hosted" } else { "Unknown" }
-              $status = if ($entry.Result -eq 1) { "Success" } elseif ($entry.Result -eq 0) { "Failed" } else { "Unknown" }
+              $status = if ($entry.Result -eq 0) { "Success" } elseif ($entry.Result -eq 1) { "Failed" } else { "Unknown" }
               Write-Host "    • HostType: $hostLabel → Result: $status"
             }
           }
