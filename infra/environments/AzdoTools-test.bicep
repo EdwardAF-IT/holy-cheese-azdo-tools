@@ -10,7 +10,7 @@ var tagsAll = union({
   Owner: 'Edward'
 }, tags)
 
-var prefix = '${appName}-${environmentName}3'
+var prefix = '${appName}-${environmentName}4'
 var safePrefix = toLower('${appName}${environmentName}')
 var sharedInsightsId = '/subscriptions/${subscriptionId}/resourceGroups/${appName}-RG-Shared/providers/microsoft.insights/components/azdotools-shared-insights'
 var sharedHostingPlanName = '${appName}-AppServicePlan-Shared'

@@ -6,7 +6,7 @@ trigger:
 parameters:
   - name: useHostedAgent
     type: boolean
-    default: false
+    default: true
 
   - name: appName
     type: string
@@ -30,13 +30,16 @@ parameters:
       dev:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Dev'
+        environmentDisplayName: 'AzdoTools-Development'
       test:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Test'
+        environmentDisplayName: 'AzdoTools-Test' 
 
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
+  sharedEnvironmentDisplayName: '${{ parameters.appName }}-Shared
 
 stages:
 - stage: ProvisionSubscription_Hosted
@@ -51,15 +54,6 @@ stages:
       hostType: 0     # Hosted agent
       envName: 'sub'  # Subscription-level resource
     steps:
-    - task: Bash@3
-      name: SimulateFailure
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Simulating hosted agent failure..."
-          exit 1
-      displayName: 'Simulate Hosted Failure'
-
     - task: Bash@3
       inputs:
         targetType: 'inline'
@@ -258,6 +252,7 @@ stages:
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
   jobs:
   - job: ProvisionSharedResources_HostedAgent
+    environment: ${{ variables.sharedEnvironmentDisplayName }}
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
@@ -265,14 +260,6 @@ stages:
       hostType: 0     # Hosted agent
       envName: 'shared'
     steps:
-    - task: Bash@3
-      inputs:
-        targetType: 'inline'
-        script: |
-          echo "Simulating hosted agent failure..."
-          exit 1
-      displayName: 'Simulate Hosted Failure'
-
     - task: Bash@3
       inputs:
         targetType: 'inline'
@@ -286,6 +273,10 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
+          az group update \
+            --name ${{ variables.sharedResourceGroup }} \
+            --set tags.Environment='Shared' App=${{ parameters.appName }}
+
           az deployment group create \
             --resource-group ${{ variables.sharedResourceGroup }} \
             --template-file infra/shared-infrastructure.bicep \
@@ -324,6 +315,7 @@ stages:
   displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
   jobs:
   - job: ProvisionSharedResources_FallbackToLocalAgent
+    environment: ${{ variables.sharedEnvironmentDisplayName }}
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -356,6 +348,10 @@ stages:
           Get-Content $paramFilePath
 
           # Deploy using parameter file
+          az group update \
+            --name ${{ variables.sharedResourceGroup }} \
+            --set tags.Environment='Shared' App=${{ parameters.appName }}
+
           az deployment group create `
             --resource-group '${{ variables.sharedResourceGroup }}' `
             --template-file 'infra/shared-infrastructure.bicep' `
@@ -390,6 +386,7 @@ stages:
   displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
   jobs:
   - job: ProvisionSharedResources_SpecifiedLocalAgent
+    environment: ${{ variables.sharedEnvironmentDisplayName }}
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
@@ -421,6 +418,10 @@ stages:
           Get-Content $paramFilePath
 
           # Deploy with parameter file
+          az group update \
+            --name ${{ variables.sharedResourceGroup }} \
+            --set tags.Environment='Shared' App=${{ parameters.appName }}
+
           az deployment group create `
             --resource-group '${{ variables.sharedResourceGroup }}' `
             --template-file 'infra/shared-infrastructure.bicep' `
@@ -462,15 +463,8 @@ stages:
       variables:
         hostType: 0          # Hosted agent
         envName: ${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
       steps:
-      - task: Bash@3
-        inputs:
-          targetType: 'inline'
-          script: |
-            echo "Simulating hosted agent failure..."
-            exit 1
-        displayName: 'Simulate Hosted Failure'
-
       - task: Bash@3
         inputs:
           targetType: 'inline'
@@ -488,6 +482,10 @@ stages:
             envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
             echo "Deploying ${{ env.key }} using template: $envFile"
 
+            az group update \
+              --name ${{ env.value.resourceGroup }} \
+              --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+
             az deployment group create \
               --resource-group ${{ env.value.resourceGroup }} \
               --template-file $envFile \
@@ -500,7 +498,6 @@ stages:
 
             $exitCode = $LASTEXITCODE
             Write-Host "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
-
         displayName: 'Deploy Environment Infrastructure (Hosted)'
 
       - task: PowerShell@2
@@ -532,6 +529,7 @@ stages:
       variables:
         hostType: 1          # Local fallback
         envName: ${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
       steps:
       - task: AzureCLI@2
         name: DeployEnvFallbackInfra
@@ -564,6 +562,10 @@ stages:
             Get-Content $paramFilePath
   
             # Deploy with parameter file
+            az group update \
+              --name ${{ env.value.resourceGroup }} \
+              --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+
             az deployment group create `
               --resource-group '${{ env.value.resourceGroup }}' `
               --template-file $templateFile `
@@ -571,7 +573,6 @@ stages:
 
             $exitCode = $LASTEXITCODE
             Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
-
         displayName: 'Deploy Environment Fallback (${ env.key })'
   
       - task: PowerShell@2
@@ -603,6 +604,7 @@ stages:
       variables:
         hostType: 2          # Local specified
         envName: ${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
       steps:
       - task: AzureCLI@2
         name: DeployEnvDirectInfra
@@ -635,6 +637,10 @@ stages:
             Get-Content $paramFilePath
   
             # Run deployment
+            az group update \
+              --name ${{ env.value.resourceGroup }} \
+              --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+
             az deployment group create `
               --resource-group '${{ env.value.resourceGroup }}' `
               --template-file $templateFile `
@@ -642,7 +648,6 @@ stages:
 
             $exitCode = $LASTEXITCODE
             Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
-
         displayName: 'Deploy Environment Direct (${ env.key })'
   
       - task: PowerShell@2
