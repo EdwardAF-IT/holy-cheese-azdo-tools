@@ -6,7 +6,7 @@ trigger:
 parameters:
   - name: useHostedAgent
     type: boolean
-    default: true
+    default: false
 
   - name: appName
     type: string
