@@ -268,6 +268,7 @@ stages:
       runOnce:
         deploy:
           steps:
+          - checkout: self
           - task: Bash@3
             inputs:
               targetType: 'inline'
@@ -337,6 +338,7 @@ stages:
       runOnce:
         deploy:
           steps:
+          - checkout: self
           - task: AzureCLI@2
             name: DeploySharedFallbackInfra
             inputs:
@@ -410,6 +412,7 @@ stages:
       runOnce:
         deploy:
           steps:
+          - checkout: self
           - task: AzureCLI@2
             name: DeploySharedInfra
             inputs:
@@ -484,6 +487,7 @@ stages:
         runOnce:
           deploy:
             steps:
+            - checkout: self
             - task: Bash@3
               inputs:
                 targetType: 'inline'
@@ -553,6 +557,7 @@ stages:
         runOnce:
           deploy:
             steps:
+            - checkout: self
             - task: AzureCLI@2
               name: DeployEnvFallbackInfra
               inputs:
@@ -631,6 +636,7 @@ stages:
         runOnce:
           deploy:
             steps:
+            - checkout: self
             - task: AzureCLI@2
               name: DeployEnvDirectInfra
               inputs:
