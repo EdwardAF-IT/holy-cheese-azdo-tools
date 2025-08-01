@@ -499,16 +499,16 @@ stages:
               name: DeployEnvInfra
               inputs:
                 azureSubscription: 'HolyCheese-ServiceConnection'
-                scriptType: ps
+                scriptType: bash
                 scriptLocation: inlineScript
                 inlineScript: |
                   envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
                   echo "Deploying ${{ env.key }} using template: $envFile"
-                
+            
                   az group update \
                     --name ${{ env.value.resourceGroup }} \
-                    --set tags.Environment=${{ env.value.environmentDisplayName }}        tags.App='${{ parameters.appName }}'
-                
+                    --set tags.Environment=${{ env.value.environmentDisplayName tags.App='${{ parameters.appName }}'
+            
                   az deployment group create \
                     --resource-group ${{ env.value.resourceGroup }} \
                     --template-file "$envFile" \
@@ -518,7 +518,7 @@ stages:
                       location='${{ env.value.location }}' \
                       tags={} \
                       subscriptionId='${{ parameters.subscriptionId }}'
-                
+            
                   exitCode=$?
                   echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
               displayName: 'Deploy Environment Infrastructure (Hosted)'
