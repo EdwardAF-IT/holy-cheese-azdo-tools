@@ -6,8 +6,8 @@ trigger:
     include:
       - infra/**
     exclude:
-      - setup-devops-environments.yml
-      - *.json
+      - 'setup-devops-environments.yml'
+      - '*.json'
 
 parameters:
   - name: useHostedAgent
