@@ -20,6 +20,9 @@ jobs:
           'AzdoTools-Test'
         )
 
+        az extension add --name azure-devops
+        az devops configure --defaults organization=https://dev.azure.com/techwavellc project=holy-cheese
+
         foreach ($envName in $envNames) {
           Write-Host "Checking environment '$envName'..."
           $exists = az devops environment list --query "[?name=='$envName'].name" -o tsv
