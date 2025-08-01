@@ -502,25 +502,25 @@ stages:
                 scriptType: ps
                 scriptLocation: inlineScript
                 inlineScript: |
-                  $envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
-                  Write-Host "Deploying ${{ env.key }} using template: $envFile"
-  
+                  envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+                  echo "Deploying ${{ env.key }} using template: $envFile"
+                
                   az group update \
                     --name ${{ env.value.resourceGroup }} \
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} tags.App='${{ parameters.appName }}'
-  
+                    --set tags.Environment=${{ env.value.environmentDisplayName }}        tags.App='${{ parameters.appName }}'
+                
                   az deployment group create \
                     --resource-group ${{ env.value.resourceGroup }} \
-                    --template-file $envFile \
+                    --template-file "$envFile" \
                     --parameters \
-                      appName=${{ parameters.appName }} \
+                      appName='${{ parameters.appName }}' \
                       environmentName='${{ env.key }}' \
                       location='${{ env.value.location }}' \
                       tags={} \
                       subscriptionId='${{ parameters.subscriptionId }}'
-  
-                  $exitCode = $LASTEXITCODE
-                  Write-Host "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
+                
+                  exitCode=$?
+                  echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
               displayName: 'Deploy Environment Infrastructure (Hosted)'
   
             - task: PowerShell@2
