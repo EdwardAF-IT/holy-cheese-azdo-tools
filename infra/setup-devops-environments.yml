@@ -1,34 +1,49 @@
-trigger: none
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - setup-devops-environments.yml
 
 pool:
   vmImage: 'windows-latest'
 
 jobs:
 - job: CreateEnvironments
-  displayName: 'Environment Provisioning'
+  displayName: 'Environment Provisioning via REST API'
   steps:
   - task: AzureCLI@2
-    displayName: 'Create Environments via AZ CLI'
+    displayName: 'Create Environments via REST API'
     inputs:
       azureSubscription: 'HolyCheese-ServiceConnection'
       scriptType: 'ps'
       scriptLocation: 'inlineScript'
       inlineScript: |
+        $org = "techwavellc"
+        $project = "holy-cheese"
         $envNames = @(
           'AzdoTools-Shared',
           'AzdoTools-Development',
           'AzdoTools-Test'
         )
 
-        az extension add --name azure-devops
-        az devops configure --defaults organization=https://dev.azure.com/techwavellc project=holy-cheese
+        $headers = @{
+          Authorization = "Bearer $env:AZURE_DEVOPS_EXT_PAT"
+          "Content-Type" = "application/json"
+        }
 
         foreach ($envName in $envNames) {
-          Write-Host "Checking environment '$envName'..."
-          $exists = az devops environment list --query "[?name=='$envName'].name" -o tsv
+          Write-Host "Checking if environment '$envName' exists..."
+
+          $checkUrl = "https://dev.azure.com/$org/$project/_apis/distributedtask/environments?api-version=7.1-preview.1"
+          $existing = Invoke-RestMethod -Uri $checkUrl -Method Get -Headers $headers
+          $exists = $existing.value | Where-Object { $_.name -eq $envName }
+
           if (-not $exists) {
-            Write-Host "Creating environment '$envName'"
-            az pipelines environment create --name "$envName" --output none
+            Write-Host "Creating environment '$envName'..."
+            $body = @{ name = $envName; type = "generic" } | ConvertTo-Json
+            Invoke-RestMethod -Uri $checkUrl -Method Post -Headers $headers -Body $body
           }
           else {
             Write-Host "Environment '$envName' already exists."
