@@ -44,6 +44,7 @@ variables:
 stages:
 - stage: Setup_DevOpsEnvironments
   displayName: 'Initialize DevOps Environments for Shared and Scoped Stages'
+  dependsOn: []
   jobs:
   - job: EnsureRelevantEnvironmentsExist
     pool:
@@ -87,6 +88,8 @@ stages:
 - stage: ProvisionSubscription_Hosted
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
+  dependsOn:
+    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSubscriptionBaseline_HostedAgent
     environment: 'Subscription'
@@ -125,7 +128,6 @@ stages:
 
                 $exitCode = $LASTEXITCODE
                 Write-Host "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
-
             displayName: 'Deploy Subscription Baseline (Hosted)'
 
           - task: PowerShell@2
@@ -150,6 +152,8 @@ stages:
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
+  dependsOn:
+    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     environment: 'Subscription-Fallback'
@@ -230,6 +234,8 @@ stages:
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
+  dependsOn:
+    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     environment: 'Subscription-Local'
@@ -304,6 +310,8 @@ stages:
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
+  dependsOn:
+    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSharedResources_HostedAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -369,6 +377,8 @@ stages:
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
+  dependsOn:
+    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSharedResources_FallbackToLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -442,6 +452,8 @@ stages:
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
+  dependsOn:
+    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSharedResources_SpecifiedLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -515,6 +527,8 @@ stages:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
     displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
+    dependsOn:
+      - Setup_DevOpsEnvironments
     jobs:
     - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -585,6 +599,8 @@ stages:
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
+    dependsOn:
+      - Setup_DevOpsEnvironments
     jobs:
     - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -663,6 +679,8 @@ stages:
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
+    dependsOn:
+      - Setup_DevOpsEnvironments
     jobs:
     - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
