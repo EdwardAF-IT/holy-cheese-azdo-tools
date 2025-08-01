@@ -85,6 +85,7 @@ stages:
 
           $exitCode = $LASTEXITCODE
           Write-Host "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
+
       displayName: 'Deploy Subscription Baseline (Hosted)'
 
     - task: PowerShell@2
@@ -251,7 +252,7 @@ stages:
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'ProvisionResult_$(System.StageName)'
-          
+        
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
