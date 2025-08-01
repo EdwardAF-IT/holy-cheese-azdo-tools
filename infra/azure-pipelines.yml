@@ -283,8 +283,8 @@ stages:
               inlineScript: |
                 az group update \
                   --name ${{ variables.sharedResourceGroup }} \
-                  --set tags.Environment='Shared' App=${{ parameters.appName }}
-
+                  --set tags.Environment='Shared' tags.App='${{ parameters.appName }}'
+                
                 az deployment group create \
                   --resource-group ${{ variables.sharedResourceGroup }} \
                   --template-file infra/shared-infrastructure.bicep \
@@ -293,9 +293,9 @@ stages:
                     resourceGroupName='${{ variables.sharedResourceGroup }}' \
                     tags={} \
                     subscriptionId='${{ parameters.subscriptionId }}'
-
-                $exitCode = $LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=SharedHostedExitCode;isOutput=true]$exitCode"
+                
+                exitCode=$?
+                echo "##vso[task.setvariable variable=SharedHostedExitCode;isOutput=true]$exitCode"
             displayName: 'Deploy Shared Infrastructure (Hosted)'
 
           - task: PowerShell@2
@@ -360,7 +360,7 @@ stages:
                 # Deploy using parameter file
                 az group update \
                   --name ${{ variables.sharedResourceGroup }} \
-                  --set tags.Environment='Shared' App=${{ parameters.appName }}
+                  --set tags.Environment='Shared' tags.App='${{ parameters.appName }}'
 
                 az deployment group create `
                   --resource-group '${{ variables.sharedResourceGroup }}' `
@@ -432,7 +432,7 @@ stages:
                 # Deploy with parameter file
                 az group update \
                   --name ${{ variables.sharedResourceGroup }} \
-                  --set tags.Environment='Shared' App=${{ parameters.appName }}
+                  --set tags.Environment='Shared' tags.App='${{ parameters.appName }}'
 
                 az deployment group create `
                   --resource-group '${{ variables.sharedResourceGroup }}' `
@@ -490,15 +490,15 @@ stages:
               name: DeployEnvInfra
               inputs:
                 azureSubscription: 'HolyCheese-ServiceConnection'
-                scriptType: bash
+                scriptType: ps
                 scriptLocation: inlineScript
                 inlineScript: |
-                  envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
-                  echo "Deploying ${{ env.key }} using template: $envFile"
+                  $envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+                  Write-Host "Deploying ${{ env.key }} using template: $envFile"
   
                   az group update \
                     --name ${{ env.value.resourceGroup }} \
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} tags.App='${{ parameters.appName }}'
   
                   az deployment group create \
                     --resource-group ${{ env.value.resourceGroup }} \
@@ -581,7 +581,7 @@ stages:
                   # Deploy with parameter file
                   az group update `
                     --name ${{ env.value.resourceGroup }} `
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} tags.App='${{ parameters.appName }}'
   
                   az deployment group create `
                     --resource-group '${{ env.value.resourceGroup }}' `
@@ -659,7 +659,7 @@ stages:
                   # Run deployment
                   az group update `
                     --name ${{ env.value.resourceGroup }} `
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} App=${{ parameters.appName }}
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} tags.App='${{ parameters.appName }}'
   
                   az deployment group create `
                     --resource-group '${{ env.value.resourceGroup }}' `
