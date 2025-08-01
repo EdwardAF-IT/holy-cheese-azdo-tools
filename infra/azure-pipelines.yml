@@ -71,7 +71,7 @@ stages:
       name: DeployInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: ps
+        scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
           echo "Provisioning baseline subscription infrastructure with hosted agent..."
@@ -79,13 +79,12 @@ stages:
             --location 'centralus' \
             --template-file infra/subscription-baseline.bicep \
             --parameters \
-              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
+              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs |  keys  +   ["Shared"]') \
               projectPrefix=${{ parameters.appName }} \
               location='centralus'
-
-          $exitCode = $LASTEXITCODE
-          Write-Host "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
-
+    
+          exitCode=$?
+          echo "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
       displayName: 'Deploy Subscription Baseline (Hosted)'
 
     - task: PowerShell@2
