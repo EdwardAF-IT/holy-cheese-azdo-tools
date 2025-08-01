@@ -507,7 +507,8 @@ stages:
             
                   az group update \
                     --name ${{ env.value.resourceGroup }} \
-                    --set tags.Environment=${{ env.value.environmentDisplayName tags.App='${{ parameters.appName }}'
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} \
+                          tags.App='${{ parameters.appName }}'
             
                   az deployment group create \
                     --resource-group ${{ env.value.resourceGroup }} \
