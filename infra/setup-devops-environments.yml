@@ -28,7 +28,7 @@ jobs:
           $exists = az devops environment list --query "[?name=='$envName'].name" -o tsv
           if (-not $exists) {
             Write-Host "Creating environment '$envName'"
-            az devops environment create --name "$envName" --output none
+            az pipelines environment create --name "$envName" --output none
           }
           else {
             Write-Host "Environment '$envName' already exists."
