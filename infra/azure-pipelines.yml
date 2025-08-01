@@ -42,6 +42,48 @@ variables:
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
 
 stages:
+- stage: Setup_DevOpsEnvironments
+  displayName: 'Initialize DevOps Environments for Shared and Scoped Stages'
+  jobs:
+  - job: EnsureRelevantEnvironmentsExist
+    pool:
+      vmImage: 'windows-latest'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Create Required DevOps Environments with Azure CLI'
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Shared environment
+          $sharedEnv = '${{ variables.sharedEnvironmentDisplayName }}'
+
+          # Parameterized environments from YAML object
+          $rawEnvs = @"
+          ${{ convertToJson(parameters.environments) }}
+          "@ | ConvertFrom-Json
+
+          $envNames = @($sharedEnv)
+          foreach ($env in $rawEnvs.psobject.Properties) {
+            $envNames += $env.Value.environmentDisplayName
+          }
+
+          foreach ($envName in $envNames) {
+            Write-Host "Checking environment '$envName'"
+            $exists = az devops environment list --query "[?name=='$envName'].name" -o tsv
+            if (-not $exists) {
+              Write-Host "Creating environment '$envName'"
+              az devops environment create --name "$envName" --output none
+            }
+            else {
+              Write-Host "Environment '$envName' already exists."
+            }
+          }
+        enableScriptsAccessOption: true
+      env:
+        AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+    
 - stage: ProvisionSubscription_Hosted
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
