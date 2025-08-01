@@ -52,217 +52,205 @@ stages:
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   jobs:
-  - deployment: ProvisionSubscriptionBaseline_HostedAgent
-    environment: 'Subscription'
+  - job: ProvisionSubscriptionBaseline_HostedAgent
     pool:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     variables:
       hostType: 0     # Hosted agent
       envName: 'sub'  # Subscription-level resource
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: Bash@3
-            inputs:
-              targetType: 'inline'
-              script: |
-                echo "Using agent: $(Agent.Name)"
-            displayName: 'Agent Info'
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Using agent: $(Agent.Name)"
+      displayName: 'Agent Info'
 
-          - task: AzureCLI@2
-            name: DeployInfra
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                echo "Provisioning baseline subscription infrastructure with hosted agent..."
-                az deployment sub create \
-                  --location 'centralus' \
-                  --template-file infra/subscription-baseline.bicep \
-                  --parameters \
-                    rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
-                    projectPrefix=${{ parameters.appName }} \
-                    location='centralus'
+    - task: AzureCLI@2
+      name: DeployInfra
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          echo "Provisioning baseline subscription infrastructure with hosted agent..."
+          az deployment sub create \
+            --location 'centralus' \
+            --template-file infra/subscription-baseline.bicep \
+            --parameters \
+              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
+              projectPrefix=${{ parameters.appName }} \
+              location='centralus'
 
-                $exitCode = $LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Subscription Baseline (Hosted)'
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
+      displayName: 'Deploy Subscription Baseline (Hosted)'
 
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployInfra.SubHostedExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $(DeployInfra.SubHostedExitCode)
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
-  - deployment: ProvisionSubscriptionBaseline_FallbackToLocalAgent
-    environment: 'Subscription-Fallback'
+  - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
       hostType: 1     # Local fallback
       envName: 'sub'  # Subscription-level
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: Bash@3
-            inputs:
-              targetType: 'inline'
-              script: |
-                echo "Fallback triggered — using local agent"
-                echo "##vso[task.setvariable variable=subscriptionAgentFallback;isOutput=true]true"
-            displayName: 'Mark Fallback Active'
+    steps:
+    - task: Bash@3
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Fallback triggered — using local agent"
+          echo "##vso[task.setvariable variable=subscriptionAgentFallback;isOutput=true]true"
+      displayName: 'Mark Fallback Active'
 
-          - task: AzureCLI@2
-            name: DeployInfra
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: ps
-              scriptLocation: inlineScript
-              inlineScript: |
-                Write-Host "Provisioning baseline subscription infrastructure with local agent..."
+    - task: AzureCLI@2
+      name: DeployInfra
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "Provisioning baseline subscription infrastructure with local agent..."
 
-                # Extract environment suffixes
-                $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
-                $rgSuffixes += 'Shared'
+          # Extract environment suffixes
+          $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
+          $rgSuffixes += 'Shared'
 
-                # Build JSON parameters file
-                $paramObj = @{
-                  rgSuffixes     = @{ value = $rgSuffixes }
-                  projectPrefix  = @{ value = '${{ parameters.appName }}' }
-                  location       = @{ value = 'centralus' }
-                }
+          # Build JSON parameters file
+          $paramObj = @{
+            rgSuffixes     = @{ value = $rgSuffixes }
+            projectPrefix  = @{ value = '${{ parameters.appName }}' }
+            location       = @{ value = 'centralus' }
+          }
 
-                $paramFilePath = Join-Path $env:TEMP "params.json"
-                $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+          $paramFilePath = Join-Path $env:TEMP "params.json"
+          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
 
-                Write-Host "Parameters written to $paramFilePath"
-                Get-Content $paramFilePath
+          Write-Host "Parameters written to $paramFilePath"
+          Get-Content $paramFilePath
 
-                # Run deployment with @file syntax
-                az deployment sub create `
-                  --location 'centralus' `
-                  --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
-                  --parameters @$paramFilePath
+          # Run deployment with @file syntax
+          az deployment sub create `
+            --location 'centralus' `
+            --template-file '$(Build.SourcesDirectory)/infra/subscription-baseline.bicep' `
+            --parameters @$paramFilePath
 
-                $exitCode=$LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=DeployInfraExitCode;isOutput=true]$exitCode"
-            env:
-              parameters_environments: ${{ convertToJson(parameters.environments) }}
-            displayName: 'Deploy Subscription Baseline (Fallback)'
+          $exitCode=$LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=DeployInfraExitCode;isOutput=true]$exitCode"
+      env:
+        parameters_environments: ${{ convertToJson(parameters.environments) }}
+      displayName: 'Deploy Subscription Baseline (Fallback)'
 
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployInfra.DeployInfraExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $(DeployInfra.DeployInfraExitCode)
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
 
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   jobs:
-  - deployment: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
-    environment: 'Subscription-Local'
+  - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
       hostType: 2     # Local specified
       envName: 'sub'  # Subscription-level
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - task: AzureCLI@2
-            name: DeployInfra
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: ps
-              scriptLocation: inlineScript
-              inlineScript: |
-                Write-Host "Provisioning subscription infrastructure directly with local agent..."
+    steps:
+    - task: AzureCLI@2
+      name: DeployInfra
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          Write-Host "Provisioning subscription infrastructure directly with local agent..."
 
-                # Extract environment suffixes
-                $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
-                $rgSuffixes += 'Shared'
+          # Extract environment suffixes
+          $rgSuffixes = $env:parameters_environments | ConvertFrom-Json | Get-Member -MemberType NoteProperty | ForEach-Object { $_.Name }
+          $rgSuffixes += 'Shared'
 
-                # Construct parameters
-                $paramObj = @{
-                  rgSuffixes    = @{ value = $rgSuffixes }
-                  projectPrefix = @{ value = '${{ parameters.appName }}' }
-                  location      = @{ value = 'centralus' }
-                }
+          # Construct parameters
+          $paramObj = @{
+            rgSuffixes    = @{ value = $rgSuffixes }
+            projectPrefix = @{ value = '${{ parameters.appName }}' }
+            location      = @{ value = 'centralus' }
+          }
 
-                # Write parameter file
-                $paramFilePath = Join-Path $env:TEMP "params.json"
-                $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+          # Write parameter file
+          $paramFilePath = Join-Path $env:TEMP "params.json"
+          $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
 
-                Write-Host "Parameter file contents:"
-                Get-Content $paramFilePath
+          Write-Host "Parameter file contents:"
+          Get-Content $paramFilePath
 
-                # Deploy using @params syntax
-                az deployment sub create `
-                  --location 'centralus' `
-                  --template-file 'infra/subscription-baseline.bicep' `
-                  --parameters @$paramFilePath
+          # Deploy using @params syntax
+          az deployment sub create `
+            --location 'centralus' `
+            --template-file 'infra/subscription-baseline.bicep' `
+            --parameters @$paramFilePath
 
-                $exitCode = $LASTEXITCODE
-                Write-Host "##vso[task.setvariable variable=SubFlagExitCode;isOutput=true]$exitCode"
+          $exitCode = $LASTEXITCODE
+          Write-Host "##vso[task.setvariable variable=SubFlagExitCode;isOutput=true]$exitCode"
 
-            env:
-              parameters_environments: ${{ convertToJson(parameters.environments) }}
-            displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
+      env:
+        parameters_environments: ${{ convertToJson(parameters.environments) }}
+      displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
 
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployInfra.SubFlagExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+    - task: PowerShell@2
+      displayName: 'Log Provision Result'
+      condition: always()
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+        arguments: >
+          -EnvName $(envName)
+          -HostType $(hostType)
+          -Result $(DeployInfra.SubFlagExitCode)
+          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Stage Result'
+      condition: always()
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: 'ProvisionResult_$(System.StageName)'
           
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
