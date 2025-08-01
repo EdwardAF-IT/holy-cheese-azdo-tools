@@ -4,7 +4,11 @@ trigger:
       - main
   paths:
     include:
-      - infra/**
+      - infra/environments/**
+      - infra/modules/**
+      - infra/scripts/**
+      - infra/pipelines/templates/**
+      - infra/pipelines/infra-provision-loop.yml
     exclude:
       - infra/pipelines/setup-devops-environments.yml
       - infra/**/*.json
