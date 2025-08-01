@@ -298,6 +298,11 @@ stages:
                 echo "##vso[task.setvariable variable=SharedHostedExitCode;isOutput=true]$exitCode"
             displayName: 'Deploy Shared Infrastructure (Hosted)'
 
+          - script: |
+              echo "Listing script files:"
+              ls -la $(Build.SourcesDirectory)/infra/scripts
+            displayName: 'Verify Script Path'
+
           - task: PowerShell@2
             displayName: 'Log Provision Result'
             condition: always()
