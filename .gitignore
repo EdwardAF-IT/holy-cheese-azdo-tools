@@ -265,3 +265,4 @@ __pycache__/
 # Godot 4+ specific ignores
 .godot/
 /android/
+/infra/provision-results.json
