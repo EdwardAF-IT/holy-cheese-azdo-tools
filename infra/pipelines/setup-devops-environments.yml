@@ -4,7 +4,7 @@ trigger:
       - main
   paths:
     include:
-      - 'setup-devops-environments.yml'
+      - infra/pipelines/setup-devops-environments.yml
 
 pool:
   vmImage: 'windows-latest'
