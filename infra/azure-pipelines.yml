@@ -71,7 +71,7 @@ stages:
       name: DeployInfra
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: bash
+        scriptType: ps
         scriptLocation: inlineScript
         inlineScript: |
           echo "Provisioning baseline subscription infrastructure with hosted agent..."
