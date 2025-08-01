@@ -42,54 +42,9 @@ variables:
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
 
 stages:
-- stage: Setup_DevOpsEnvironments
-  displayName: 'Initialize DevOps Environments for Shared and Scoped Stages'
-  dependsOn: []
-  jobs:
-  - job: EnsureRelevantEnvironmentsExist
-    pool:
-      vmImage: 'windows-latest'
-    steps:
-    - task: AzureCLI@2
-      displayName: 'Create Required DevOps Environments with Azure CLI'
-      inputs:
-        azureSubscription: 'HolyCheese-ServiceConnection'
-        scriptType: 'ps'
-        scriptLocation: 'inlineScript'
-        inlineScript: |
-          # Shared environment
-          $sharedEnv = '${{ variables.sharedEnvironmentDisplayName }}'
-
-          # Parameterized environments from YAML object
-          $rawEnvs = @"
-          ${{ convertToJson(parameters.environments) }}
-          "@ | ConvertFrom-Json
-
-          $envNames = @($sharedEnv)
-          foreach ($env in $rawEnvs.psobject.Properties) {
-            $envNames += $env.Value.environmentDisplayName
-          }
-
-          foreach ($envName in $envNames) {
-            Write-Host "Checking environment '$envName'"
-            $exists = az devops environment list --query "[?name=='$envName'].name" -o tsv
-            if (-not $exists) {
-              Write-Host "Creating environment '$envName'"
-              az devops environment create --name "$envName" --output none
-            }
-            else {
-              Write-Host "Environment '$envName' already exists."
-            }
-          }
-        enableScriptsAccessOption: true
-      env:
-        AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
-    
 - stage: ProvisionSubscription_Hosted
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
-  dependsOn:
-    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSubscriptionBaseline_HostedAgent
     environment: 'Subscription'
@@ -152,8 +107,6 @@ stages:
 - stage: ProvisionSubscription_LocalFallback
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
-  dependsOn:
-    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     environment: 'Subscription-Fallback'
@@ -234,8 +187,6 @@ stages:
 - stage: ProvisionSubscription_LocalFlagDriven
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
-  dependsOn:
-    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     environment: 'Subscription-Local'
@@ -310,8 +261,6 @@ stages:
 - stage: ProvisionShared_Hosted
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
-  dependsOn:
-    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSharedResources_HostedAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -377,8 +326,6 @@ stages:
 - stage: ProvisionShared_LocalFallback
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
-  dependsOn:
-    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSharedResources_FallbackToLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -452,8 +399,6 @@ stages:
 - stage: ProvisionShared_LocalFlagDriven
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
-  dependsOn:
-    - Setup_DevOpsEnvironments
   jobs:
   - deployment: ProvisionSharedResources_SpecifiedLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -527,8 +472,6 @@ stages:
   - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
     displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
-    dependsOn:
-      - Setup_DevOpsEnvironments
     jobs:
     - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -599,8 +542,6 @@ stages:
   - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
-    dependsOn:
-      - Setup_DevOpsEnvironments
     jobs:
     - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -679,8 +620,6 @@ stages:
   - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
-    dependsOn:
-      - Setup_DevOpsEnvironments
     jobs:
     - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}

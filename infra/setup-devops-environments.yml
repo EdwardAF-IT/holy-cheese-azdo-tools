@@ -1,0 +1,36 @@
+trigger: none
+
+pool:
+  vmImage: 'windows-latest'
+
+jobs:
+- job: CreateEnvironments
+  displayName: 'Environment Provisioning'
+  steps:
+  - task: AzureCLI@2
+    displayName: 'Create Environments via AZ CLI'
+    inputs:
+      azureSubscription: 'HolyCheese-ServiceConnection'
+      scriptType: 'ps'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        $envNames = @(
+          'AzdoTools-Shared',
+          'AzdoTools-Development',
+          'AzdoTools-Test'
+        )
+
+        foreach ($envName in $envNames) {
+          Write-Host "Checking environment '$envName'..."
+          $exists = az devops environment list --query "[?name=='$envName'].name" -o tsv
+          if (-not $exists) {
+            Write-Host "Creating environment '$envName'"
+            az devops environment create --name "$envName" --output none
+          }
+          else {
+            Write-Host "Environment '$envName' already exists."
+          }
+        }
+      enableScriptsAccessOption: true
+    env:
+      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
