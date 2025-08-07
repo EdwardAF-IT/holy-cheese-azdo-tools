@@ -39,6 +39,8 @@ jobs:
           $checkUrl = "https://dev.azure.com/$org/$project/_apis/distributedtask/environments?api-version=7.1-preview.1"
           $existing = Invoke-RestMethod -Uri $checkUrl -Method Get -Headers $headers
           $exists = $existing.value | Where-Object { $_.name -eq $envName }
+          write-host "Check URL: $checkUrl"
+          write-host "Existing environments: $($existing.value | ForEach-Object { $_.name } | Out-String)"
 
           if (-not $exists) {
             Write-Host "Creating environment '$envName'..."
