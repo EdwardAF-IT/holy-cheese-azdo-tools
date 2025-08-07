@@ -42,6 +42,15 @@ jobs:
           write-host "Check URL: $checkUrl"
           write-host "Existing: $existing"
           write-host "Existing environments: $($existing.value | ForEach-Object { $_.name } | Out-String)"
+          Write-Host "Token length: $($env:AZURE_DEVOPS_EXT_PAT.Length)"
+          $whoamiUrl = "https://dev.azure.com/$org/_apis/profile/profiles/me?api-version=7.1-preview.1"
+          try {
+            $profile = Invoke-RestMethod -Uri $whoamiUrl -Method Get -Headers $headers
+            Write-Host "Authenticated as: $($profile.displayName)"
+          } catch {
+            Write-Host "Token test failed: $($_.Exception.Message)"
+          }
+
 
           if (-not $exists) {
             Write-Host "Creating environment '$envName'..."
