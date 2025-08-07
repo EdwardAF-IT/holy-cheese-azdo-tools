@@ -40,6 +40,7 @@ jobs:
           $existing = Invoke-RestMethod -Uri $checkUrl -Method Get -Headers $headers
           $exists = $existing.value | Where-Object { $_.name -eq $envName }
           write-host "Check URL: $checkUrl"
+          write-host "Existing: $existing"
           write-host "Existing environments: $($existing.value | ForEach-Object { $_.name } | Out-String)"
 
           if (-not $exists) {
