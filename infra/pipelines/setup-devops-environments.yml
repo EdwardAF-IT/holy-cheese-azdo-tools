@@ -6,6 +6,9 @@ trigger:
     include:
       - infra/pipelines/setup-devops-environments.yml
 
+variables:
+- group: AzdoToolsKeyVault
+
 pool:
   vmImage: 'windows-latest'
 
@@ -39,10 +42,10 @@ jobs:
           $checkUrl = "https://dev.azure.com/$org/$project/_apis/distributedtask/environments?api-version=7.1-preview.1"
           $existing = Invoke-RestMethod -Uri $checkUrl -Method Get -Headers $headers
           $exists = $existing.value | Where-Object { $_.name -eq $envName }
-          write-host "Check URL: $checkUrl"
-          write-host "Existing: $existing"
-          write-host "Existing environments: $($existing.value | ForEach-Object { $_.name } | Out-String)"
+          Write-Host "Check URL: $checkUrl"
+          Write-Host "Existing environments: $($existing.value | ForEach-Object { $_.name } | Out-String)"
           Write-Host "Token length: $($env:AZURE_DEVOPS_EXT_PAT.Length)"
+
           $whoamiUrl = "https://dev.azure.com/$org/_apis/profile/profiles/me?api-version=7.1-preview.1"
           try {
             $profile = Invoke-RestMethod -Uri $whoamiUrl -Method Get -Headers $headers
@@ -50,7 +53,6 @@ jobs:
           } catch {
             Write-Host "Token test failed: $($_.Exception.Message)"
           }
-
 
           if (-not $exists) {
             Write-Host "Creating environment '$envName'..."
@@ -63,4 +65,4 @@ jobs:
         }
       enableScriptsAccessOption: true
     env:
-      AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+      AZURE_DEVOPS_EXT_PAT: $(AzDevOpsPat)  # This comes from Key Vault via the variable group
