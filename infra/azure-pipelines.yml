@@ -45,6 +45,10 @@ parameters:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Test'
         environmentDisplayName: 'AzdoTools-Test' 
+      prod:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Prod'
+        environmentDisplayName: 'AzdoTools-Production' 
 
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}

@@ -28,7 +28,8 @@ jobs:
         $envNames = @(
           'AzdoTools-Shared',
           'AzdoTools-Development',
-          'AzdoTools-Test'
+          'AzdoTools-Test',
+          'AzdoTools-Production'
         )
 
         $headers = @{

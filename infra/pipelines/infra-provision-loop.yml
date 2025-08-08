@@ -13,9 +13,12 @@ parameters:
       dev:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Dev'
-      staging:
+      test:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Test'
+      prod:
+        location: 'centralus'
+        resourceGroup: 'AzdoTools-RG-Prod'
 
 stages:
 - ${{ each env in parameters.environments }}:
