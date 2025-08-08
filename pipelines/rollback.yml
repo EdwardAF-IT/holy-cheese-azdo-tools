@@ -1,0 +1,41 @@
+parameters:
+  - name: manifestVersion
+    type: string
+  - name: targetEnvironment
+    type: string
+
+jobs:
+- job: rollback
+  displayName: 'Rollback to ${{ parameters.manifestVersion }}'
+  steps:
+
+  - template: ../templates/manifest-read.yml
+    parameters:
+      version: ${{ parameters.manifestVersion }}
+
+  - script: |
+      Write-Host "🔁 Rolling back to version: $(manifestCommit)"
+      Write-Host "From branch: $(manifestBranch)"
+      Write-Host "Target environment: ${{ parameters.targetEnvironment }}"
+    displayName: 'Log Rollback Details'
+
+  - task: AzureCLI@2
+    displayName: 'Redeploy Artifact'
+    inputs:
+      azureSubscription: 'Your-Service-Connection'
+      scriptType: 'ps'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # Example: redeploy using manifestCommit or version
+        Write-Host "Redeploying artifact version ${{ parameters.manifestVersion }} to ${{ parameters.targetEnvironment }}"
+        # Insert your infra + app redeploy logic here
+
+  - task: PowerShell@2
+    displayName: 'Tag Rollback Event'
+    inputs:
+      targetType: 'inline'
+      script: |
+        git config --global user.email "pipeline@yourdomain.com"
+        git config --global user.name "Azure DevOps"
+        git tag -a "rollback-${{ parameters.manifestVersion }}" -m "Rollback to ${{ parameters.manifestVersion }}"
+        git push origin "rollback-${{ parameters.manifestVersion }}"

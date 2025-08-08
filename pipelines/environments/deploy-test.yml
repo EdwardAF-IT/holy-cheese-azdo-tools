@@ -1,0 +1,135 @@
+trigger: none
+pr: none
+
+parameters:
+  - name: resourceType
+    default: 'Microsoft.Web/sites'
+
+variables:
+  functionAppName: 'AzdoTools'
+  notes: 'Deploying to test for validation'
+  healthCheckUrl: 'https://azdotools-test.azurewebsites.net/api/health'
+  metadataArtifactName: 'Metadata'
+  provisionArtifactName: 'ProvisionResult'
+  functionAppArtifactName: 'functionapp'
+
+resources:
+  pipelines:
+    - pipeline: infraProvision
+      source: AzdoTools-Infrastructure
+      trigger: none
+    - pipeline: devBuild
+      source: AzdoTools-Dev-Build
+      trigger: none
+
+stages:
+- stage: ValidatePrereqs
+  displayName: 'Validate Prerequisites'
+  jobs:
+  - job: ValidateInfra
+    displayName: 'Validate Test Environment Provisioning'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - download: infraProvision
+      artifact: ${{ variables.metadataArtifactName }}
+
+    - task: PowerShell@2
+      displayName: 'Read Artifact Metadata'
+      continueOnError: false
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/scripts/Read-ArtifactMetadata.ps1'
+        arguments: >
+          -MetadataPath "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/artifact-metadata.json"
+
+    - download: infraProvision
+      artifact: ${{ variables.provisionArtifactName }}
+
+    - task: PowerShell@2
+      displayName: 'Validate Provisioning Result'
+      continueOnError: false
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/scripts/Validate-ProvisionResult.ps1'
+        arguments: >
+          -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
+          -EnvName "test"
+
+  - job: ValidateDevBuild
+    displayName: 'Validate Dev Build Artifact'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - download: devBuild
+      artifact: ${{ variables.functionAppArtifactName }}
+
+    - task: PowerShell@2
+      displayName: 'Validate Dev Build Artifact'
+      continueOnError: false
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/scripts/Validate-DevBuildArtifact.ps1'
+        arguments: >
+          -Commit $(Build.SourceVersion)
+          -ArtifactDir "$(Pipeline.Workspace)/${{ variables.functionAppArtifactName }}"
+          -ArtifactNamePrefix "functionapp"
+
+- stage: Test
+  displayName: 'Deploy to Test Environment'
+  dependsOn: ValidatePrereqs
+  condition: succeeded('ValidatePrereqs')
+  jobs:
+  - job: RunIntegrationTests
+    displayName: 'Run Integration Tests'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+    - template: templates/test-integration.yml
+      parameters:
+        testProject: 'tests/HolyCheeseAzdoTools.IntegrationTests.csproj'
+
+  - job: DeployAndTag
+    displayName: 'Deploy and Tag Function App'
+    dependsOn: RunIntegrationTests
+    condition: succeeded('RunIntegrationTests')
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+
+    - template: templates/manifest-update.yml
+      parameters:
+        version: $(version)
+        branch: $(Build.SourceBranchName)
+        commit: $(Build.SourceVersion)
+        environment: 'test'
+        notes: $(notes)
+
+    - task: ManualValidation@0
+      inputs:
+        instructions: 'Approve deployment to test environment'
+        onTimeout: 'reject'
+        timeout: '24h'
+
+    - template: templates/test-version-switch.yml
+      parameters:
+        version: $(version)
+        appName: $(functionAppName)
+
+    - task: AzureCLI@2
+      displayName: 'Tag Function App with Version'
+      continueOnError: false
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          az resource tag --tags version=$(version) deployedBy=AzurePipelines `
+            --name $(functionAppName) `
+            --resource-group HolyCheese-RG `
+            --resource-type "${{ parameters.resourceType }}"
+
+  - job: HealthCheck
+    displayName: 'Post

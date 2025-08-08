@@ -1,0 +1,10 @@
+parameters:
+  testProject: 'tests/HolyCheeseAzdoTools.UnitTests.csproj'
+
+steps:
+- task: DotNetCoreCLI@2
+  displayName: 'Run Unit Tests'
+  inputs:
+    command: 'test'
+    projects: ${{ parameters.testProject }}
+    arguments: '--configuration Release'

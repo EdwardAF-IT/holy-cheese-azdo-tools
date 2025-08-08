@@ -1,0 +1,16 @@
+parameters:
+  version: ''
+  appName: 'AzdoTools'
+
+steps:
+- download: pipeline
+  artifact: functionapp
+  patterns: '**/functionapp-${{ parameters.version }}.zip'
+
+- task: AzureFunctionApp@1
+  displayName: 'Deploy Selected Version to Test'
+  inputs:
+    azureSubscription: 'HolyCheese-ServiceConnection'
+    appType: 'functionApp'
+    appName: ${{ parameters.appName }}
+    package: '$(Pipeline.Workspace)/functionapp-${{ parameters.version }}.zip'
