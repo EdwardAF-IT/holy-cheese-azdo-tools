@@ -15,6 +15,7 @@ variables:
   healthCheckUrl: 'https://azdotools-dev.azurewebsites.net/api/health'
   metadataArtifactName: 'Metadata'
   provisionArtifactName: 'ProvisionResult'
+  manifestFilePath: '$(Build.SourcesDirectory)/templates/manifest-update.yml'
 
 resources:
   pipelines:
@@ -88,7 +89,7 @@ stages:
     steps:
     - checkout: self
 
-    - template: templates/manifest-update.yml
+    - template: ${variables.manifestFilePath}
       parameters:
         version: $(Build.BuildNumber)
         branch: $(Build.SourceBranchName)
