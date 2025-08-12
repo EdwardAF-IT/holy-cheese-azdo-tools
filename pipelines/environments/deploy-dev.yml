@@ -89,7 +89,7 @@ stages:
     steps:
     - checkout: self
 
-    - template: ${variables.manifestFilePath}
+    - template: ${{ variables.manifestFilePath }}
       parameters:
         version: $(Build.BuildNumber)
         branch: $(Build.SourceBranchName)
