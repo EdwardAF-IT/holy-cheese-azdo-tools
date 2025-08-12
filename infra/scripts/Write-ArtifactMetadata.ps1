@@ -17,4 +17,4 @@ $metadata = @{
 }
 
 $metadata | ConvertTo-Json -Depth 5 | Set-Content $OutputPath
-Write-Host "✅ Metadata written to {0}".Format($OutputPath)
+[string]::Format("✅ Metadata written to {0}", $OutputPath)
