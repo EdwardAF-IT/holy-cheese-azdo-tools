@@ -1,0 +1,18 @@
+parameters:
+  - name: testProject
+    type: string
+
+jobs:
+- job: RunIntegrationTests
+  displayName: 'Run Integration Tests'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Run Integration Tests'
+    inputs:
+      command: 'test'
+      projects: '${{ parameters.testProject }}'
+      arguments: '--configuration Release --no-build'

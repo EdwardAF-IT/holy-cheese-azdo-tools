@@ -1,34 +1,55 @@
 parameters:
+  - name: manifestPath
+    type: string
+    default: '$(Pipeline.Workspace)/manifest/manifest.json'
   - name: version
     type: string
+    default: 'v0'
+  - name: notes
+    type: string
+    default: 'Auto-generated manifest'
+  - name: artifactName
+    type: string
+    default: 'functionapp'
 
-steps:
-- download: current
-  artifact: manifest
+jobs:
+- job: ReadOrGenerateManifest
+  displayName: 'Read or Generate Manifest'
+  pool:
+    vmImage: 'windows-latest'
+  steps:
 
-- task: PowerShell@2
-  displayName: 'Read Manifest File'
-  inputs:
-    targetType: 'inline'
-    script: |
-      $fileName = "manifest-${{ parameters.version }}.json"
-      $path = "$(Pipeline.Workspace)/manifest/$fileName"
+  - checkout: self
 
-      if (!(Test-Path $path)) {
-        Write-Error "❌ Manifest file not found: $path"
-        exit 1
-      }
+  - task: PowerShell@2
+    name: inferContext
+    displayName: 'Infer Branch, Commit, Environment'
+    inputs:
+      targetType: 'inline'
+      script: |
+        $branch = "$(Build.SourceBranchName)"
+        $commit = "$(Build.SourceVersion)"
+        $environment = "$(Build.DefinitionName)" -replace '^deploy-', ''
+        Write-Host "##vso[task.setvariable variable=branch]$branch"
+        Write-Host "##vso[task.setvariable variable=commit]$commit"
+        Write-Host "##vso[task.setvariable variable=environment]$environment"
 
-      $manifest = Get-Content $path | ConvertFrom-Json
-
-      Write-Host "✅ Manifest loaded: $fileName"
-      Write-Host "Version: $($manifest.version)"
-      Write-Host "Branch: $($manifest.sourceBranch)"
-      Write-Host "Commit: $($manifest.commit)"
-      Write-Host "Environment: $($manifest.deployedTo)"
-      Write-Host "Timestamp: $($manifest.deployedAt)"
-      Write-Host "Notes: $($manifest.notes)"
-
-      Write-Host "##vso[task.setvariable variable=manifestBranch]$($manifest.sourceBranch)"
-      Write-Host "##vso[task.setvariable variable=manifestCommit]$($manifest.commit)"
-      Write-Host "##vso[task.setvariable variable=manifestEnv]$($manifest.deployedTo)"
+  - task: PowerShell@2
+    name: readManifest
+    displayName: 'Read Manifest if Exists'
+    continueOnError: true
+    inputs:
+      targetType: 'inline'
+      script: |
+        if (Test-Path '${{ parameters.manifestPath }}') {
+          $json = Get-Content '${{ parameters.manifestPath }}' | ConvertFrom-Json
+          Write-Host "##vso[task.setvariable variable=version]$($json.version)"
+          Write-Host "##vso[task.setvariable variable=notes]$($json.notes)"
+          Write-Host "##vso[task.setvariable variable=artifactPath]$($json.artifactPath)"
+        } else {
+          Write-Host "Manifest not found. Will generate new one."
+          Write-Host "##vso[task.setvariable variable=version]${{ parameters.version }}"
+          Write-Host "##vso[task.setvariable variable=notes]${{ parameters.notes }}"
+          $artifactPath = "$(Pipeline.Workspace)/${{ parameters.artifactName }}/drop.zip"
+          Write-Host "##vso[task.setvariable variable=artifactPath]$artifactPath"
+        }

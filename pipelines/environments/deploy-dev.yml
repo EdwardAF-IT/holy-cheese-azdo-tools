@@ -1,38 +1,142 @@
+trigger:
+  branches:
+    include:
+      - dev
+
+pr: none
+
 parameters:
-  - name: version
-    type: string
-  - name: branch
-    type: string
-  - name: commit
-    type: string
-  - name: environment
-    type: string
-  - name: notes
-    type: string
-    default: ''
+  - name: resourceType
+    default: 'Microsoft.Web/sites'
 
-steps:
-- task: PowerShell@2
-  displayName: 'Generate Manifest File'
-  continueOnError: false
-  inputs:
-    targetType: 'inline'
-    script: |
-      $manifest = @{
-        version      = "${{ parameters.version }}"
-        sourceBranch = "${{ parameters.branch }}"
-        commit       = "${{ parameters.commit }}"
-        deployedTo   = "${{ parameters.environment }}"
-        deployedAt   = (Get-Date).ToString("o")
-        notes        = "${{ parameters.notes }}"
-      }
+variables:
+  functionAppName: 'AzdoTools'
+  notes: 'Deploying to dev for internal validation'
+  healthCheckUrl: 'https://azdotools-dev.azurewebsites.net/api/health'
+  metadataArtifactName: 'Metadata'
+  provisionArtifactName: 'ProvisionResult'
+  manifestPath: '$(Pipeline.Workspace)/manifest/manifest.json'
+  artifactName: 'functionapp'
 
-      $json = $manifest | ConvertTo-Json -Depth 3
-      $fileName = [string]::Format("manifest-{0}.json", "${{ parameters.version }}")
-      $outputPath = Join-Path "$(Build.ArtifactStagingDirectory)" $fileName
+resources:
+  pipelines:
+    - pipeline: infraProvision
+      source: AzdoTools-Infrastructure
+      trigger: none
 
-      $json | Set-Content -Path $outputPath -Encoding UTF8
-      Write-Host [string]::Format("✅ Manifest written to {0}", $outputPath)
+stages:
 
-- publish: $(Build.ArtifactStagingDirectory)
-  artifact: manifest
+# 🧪 Stage 1: Validate Infra
+- stage: ValidateInfra
+  displayName: 'Validate Dev Environment Provisioning'
+  jobs:
+  - job: ValidateDevInfra
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - download: infraProvision
+      artifact: ${{ variables.metadataArtifactName }}
+
+    - task: PowerShell@2
+      displayName: 'Read Artifact Metadata'
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/scripts/Read-ArtifactMetadata.ps1'
+        arguments: >
+          -MetadataPath "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/artifact-metadata.json"
+
+    - download: infraProvision
+      artifact: ${{ variables.provisionArtifactName }}
+
+    - task: PowerShell@2
+      displayName: 'Validate Provisioning Result'
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/scripts/Validate-ProvisionResult.ps1'
+        arguments: >
+          -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
+          -EnvName "dev"
+
+# 🧪 Stage 2: Build and Test
+- stage: BuildAndTest
+  displayName: 'Build and Run Unit Tests'
+  dependsOn: ValidateInfra
+  condition: succeeded()
+  jobs:
+  - job: BuildAndTest
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build Solution'
+      inputs:
+        command: 'build'
+        projects: '**/*.csproj'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run Unit Tests'
+      inputs:
+        command: 'test'
+        projects: '**/*UnitTests.csproj'
+        arguments: '--configuration Release --no-build'
+
+# 🚀 Stage 3: Deploy
+- stage: Deploy
+  displayName: 'Deploy to Dev Environment'
+  dependsOn: BuildAndTest
+  condition: succeeded()
+  jobs:
+
+  - job: ReadManifest
+    displayName: 'Read or Generate Manifest'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - template: templates/manifest-read.yml
+      parameters:
+        manifestPath: ${{ variables.manifestPath }}
+        artifactName: ${{ variables.artifactName }}
+        version: 'dev-$(Build.BuildId)'
+        notes: ${{ variables.notes }}
+
+  - job: DeployFunctionApp
+    dependsOn: ReadManifest
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+
+    - task: PowerShell@2
+      displayName: 'Deploy Function App'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $path = "$(artifactPath)"
+          Write-Host ("Deploying version {0} to dev using artifact: {1}" -f "$(version)", $path)
+          # Insert actual deployment logic here
+
+    - template: templates/manifest-write.yml
+      parameters:
+        manifestPath: ${{ variables.manifestPath }}
+        artifactPath: $(artifactPath)
+        version: $(version)
+        notes: $(notes)
+        branch: $(branch)
+        commit: $(commit)
+        environment: $(environment)
+
+  - job: HealthCheck
+    dependsOn: DeployFunctionApp
+    condition: succeeded()
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: PowerShell@2
+      displayName: 'Health Check'
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/scripts/HealthCheck.ps1'
+        arguments: >
+          -Url $(healthCheckUrl)

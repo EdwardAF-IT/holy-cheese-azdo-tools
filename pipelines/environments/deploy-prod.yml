@@ -1,8 +1,4 @@
-trigger:
-  branches:
-    include:
-      - main
-
+trigger: none
 pr: none
 
 parameters:
@@ -15,6 +11,8 @@ variables:
   healthCheckUrl: 'https://azdotools.azurewebsites.net/api/health'
   metadataArtifactName: 'Metadata'
   provisionArtifactName: 'ProvisionResult'
+  manifestPath: '$(Pipeline.Workspace)/manifest/manifest.json'
+  artifactName: 'functionapp'
 
 resources:
   pipelines:
@@ -26,9 +24,12 @@ resources:
       trigger: none
 
 stages:
+
+# 🧪 Stage 1: Validate Prerequisites
 - stage: ValidatePrereqs
   displayName: 'Validate Prerequisites'
   jobs:
+
   - job: ValidateTestBuild
     displayName: 'Validate Latest Test Build Passed'
     pool:
@@ -85,12 +86,27 @@ stages:
           -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
           -EnvName "prod"
 
+# 🚀 Stage 2: Deploy to Production
 - stage: Deploy
   displayName: 'Deploy to Production'
   dependsOn: ValidatePrereqs
   condition: succeeded()
   jobs:
+
+  - job: ReadManifest
+    displayName: 'Read or Generate Manifest'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - template: templates/manifest-read.yml
+      parameters:
+        manifestPath: ${{ variables.manifestPath }}
+        artifactName: ${{ variables.artifactName }}
+        version: 'prod-$(Build.BuildId)'
+        notes: ${{ variables.notes }}
+
   - job: DeployFunctionApp
+    dependsOn: ReadManifest
     pool:
       vmImage: 'ubuntu-latest'
     steps:
@@ -102,13 +118,15 @@ stages:
         onTimeout: 'reject'
         timeout: '24h'
 
-    - template: templates/manifest-update.yml
+    - template: templates/manifest-write.yml
       parameters:
-        version: $(Build.BuildNumber)
-        branch: $(Build.SourceBranchName)
-        commit: $(Build.SourceVersion)
-        environment: 'prod'
+        manifestPath: ${{ variables.manifestPath }}
+        artifactPath: $(artifactPath)
+        version: $(version)
         notes: $(notes)
+        branch: $(branch)
+        commit: $(commit)
+        environment: $(environment)
 
     - task: AzureCLI@2
       displayName: 'Tag Function App with Version'
@@ -117,7 +135,7 @@ stages:
         scriptType: 'ps'
         scriptLocation: 'inlineScript'
         inlineScript: |
-          az resource tag --tags version=$(Build.BuildNumber) deployedBy=AzurePipelines `
+          az resource tag --tags version=$(version) deployedBy=AzurePipelines `
             --name $(functionAppName) `
             --resource-group HolyCheese-RG `
             --resource-type "${{ parameters.resourceType }}"

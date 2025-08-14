@@ -32,30 +32,31 @@ function Validate-DevBuildArtifact {
     )
 
     $shortCommit = $Commit.Substring(0, 7)
-    $baseVersion = "1.2.0.{0}".Format($shortCommit)
-    $pattern = "{0}.*\.zip".Format($ArtifactNamePrefix + "-" + $baseVersion)
+    $baseVersion = [string]::Format("1.2.0.{0}", $shortCommit)
+    $pattern = [string]::Format("{0}.*\.zip", $ArtifactNamePrefix + "-" + $baseVersion)
 
     $existing = Get-ChildItem $ArtifactDir -Filter "*.zip" | Where-Object {
         $_.Name -match $pattern
     }
 
     $suffixes = $existing.Name | ForEach-Object {
-        if ($_ -match "{0}\.(.+)\.zip".Format([Regex]::Escape($ArtifactNamePrefix + "-" + $baseVersion))) {
+        if ($_ -match [string]::Format("{0}\.(.+)\.zip", [Regex]::Escape($ArtifactNamePrefix + "-" + $baseVersion))) {
             return $matches[1]
         }
     } | Sort-Object
 
     $last = $suffixes[-1]
     $next = Next-Suffix $last
-    $version = "{0}.{1}".Format($baseVersion, $next)
+    $version = [string]::Format("{0}.{1}", $baseVersion, $next)
 
-    $artifactPath = Join-Path $ArtifactDir "{0}-{1}.zip".Format($ArtifactNamePrefix, $version)
+    $artifactPath = Join-Path $ArtifactDir ([string]::Format("{0}-{1}.zip", $ArtifactNamePrefix, $version))
+
     if (-not (Test-Path $artifactPath)) {
-        Write-Error "❌ Dev build artifact not found: {0}".Format($artifactPath)
-        Write-Host "##vso[task.complete result=Failed;]Dev build artifact missing"
+        Write-Error ([string]::Format("Dev build artifact not found: {0}", $artifactPath))
+        Write-Host ([string]::Format("##vso[task.complete result=Failed;]Dev build artifact missing for version {0}", $version))
         exit 1
     }
 
-    Write-Host "✅ Dev build artifact found: {0}".Format($artifactPath)
-    Write-Host "##vso[task.setvariable variable=version]{0}".Format($version)
+    Write-Host ([string]::Format("Dev build artifact found: {0}", $artifactPath))
+    Write-Host ([string]::Format("##vso[task.setvariable variable=version]{0}", $version))
 }
