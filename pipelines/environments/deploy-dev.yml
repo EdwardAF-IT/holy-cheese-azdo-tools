@@ -94,7 +94,7 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - template: templates/manifest-read.yml
+    - template: ../templates/manifest-read.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}
         artifactName: ${{ variables.artifactName }}
@@ -117,7 +117,7 @@ stages:
           Write-Host ("Deploying version {0} to dev using artifact: {1}" -f "$(version)", $path)
           # Insert actual deployment logic here
 
-    - template: templates/manifest-write.yml
+    - template: ../templates/manifest-write.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}
         artifactPath: $(artifactPath)

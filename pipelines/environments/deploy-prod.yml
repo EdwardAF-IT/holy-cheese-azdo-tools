@@ -98,7 +98,7 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - template: templates/manifest-read.yml
+    - template: ../templates/manifest-read.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}
         artifactName: ${{ variables.artifactName }}
@@ -118,7 +118,7 @@ stages:
         onTimeout: 'reject'
         timeout: '24h'
 
-    - template: templates/manifest-write.yml
+    - template: ../templates/manifest-write.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}
         artifactPath: $(artifactPath)

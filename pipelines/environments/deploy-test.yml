@@ -99,7 +99,7 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - template: templates/manifest-read.yml
+    - template: ../templates/manifest-read.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}
         artifactName: ${{ variables.functionAppArtifactName }}
@@ -114,7 +114,7 @@ stages:
     steps:
     - checkout: self
 
-    - template: templates/manifest-write.yml
+    - template: ../templates/manifest-write.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}
         artifactPath: $(artifactPath)
@@ -130,7 +130,7 @@ stages:
         onTimeout: 'reject'
         timeout: '24h'
 
-    - template: templates/test-version-switch.yml
+    - template: ../templates/test-version-switch.yml
       parameters:
         version: $(version)
         appName: $(functionAppName)
