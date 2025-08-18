@@ -65,7 +65,6 @@ stages:
     steps:
     - download: devBuild
       artifact: ${{ variables.functionAppArtifactName }}
-
     - task: PowerShell@2
       displayName: 'Validate Dev Build Artifact'
       inputs:
@@ -82,7 +81,6 @@ stages:
   dependsOn: ValidatePrereqs
   condition: succeeded('ValidatePrereqs')
   jobs:
-
   - job: RunIntegrationTests
     displayName: 'Run Integration Tests'
     pool:
@@ -113,7 +111,6 @@ stages:
       vmImage: 'ubuntu-latest'
     steps:
     - checkout: self
-
     - template: ../templates/manifest-write.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}

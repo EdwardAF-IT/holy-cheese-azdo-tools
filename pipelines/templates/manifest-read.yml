@@ -12,13 +12,8 @@ parameters:
     type: string
     default: 'functionapp'
 
-job: ReadOrGenerateManifest
-displayName: 'Read or Generate Manifest'
-pool:
-  vmImage: 'windows-latest'
 steps:
   - checkout: self
-
   - task: PowerShell@2
     name: inferContext
     displayName: 'Infer Branch, Commit, Environment'

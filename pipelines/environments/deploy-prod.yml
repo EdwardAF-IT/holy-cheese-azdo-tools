@@ -29,7 +29,6 @@ stages:
 - stage: ValidatePrereqs
   displayName: 'Validate Prerequisites'
   jobs:
-
   - job: ValidateTestBuild
     displayName: 'Validate Latest Test Build Passed'
     pool:

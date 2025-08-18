@@ -88,7 +88,6 @@ stages:
   dependsOn: BuildAndTest
   condition: succeeded()
   jobs:
-
   - job: ReadManifest
     displayName: 'Read or Generate Manifest'
     pool:
