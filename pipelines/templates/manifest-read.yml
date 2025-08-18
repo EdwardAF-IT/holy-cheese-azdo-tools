@@ -12,13 +12,11 @@ parameters:
     type: string
     default: 'functionapp'
 
-jobs:
-- job: ReadOrGenerateManifest
-  displayName: 'Read or Generate Manifest'
-  pool:
-    vmImage: 'windows-latest'
-  steps:
-
+job: ReadOrGenerateManifest
+displayName: 'Read or Generate Manifest'
+pool:
+  vmImage: 'windows-latest'
+steps:
   - checkout: self
 
   - task: PowerShell@2
