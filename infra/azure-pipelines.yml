@@ -921,11 +921,10 @@ stages:
     - checkout: self
 
     # Static provisioning modes
-    - ${{ each env in ['Subscription', 'Shared'] }}:
-      - ${{ each mode in ['Hosted', 'LocalFallback', 'LocalFlagDriven'] }}:
-        - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ env }}
-          continueOnError: true
+    - ${{ each mode in ['Subscription_Hosted', 'Subscription_LocalFallback', 'Subscription_LocalFlagDriven', 'Shared_Hosted', 'Shared_LocalFallback', 'Shared_LocalFlagDriven'] }}:
+      - download: current
+        artifact: Metadata_Provision${{ mode }}
+        continueOnError: true
 
     # Dynamic environment loop modes
     - ${{ each env in parameters.environments }}:
