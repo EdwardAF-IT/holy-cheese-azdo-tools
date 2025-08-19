@@ -618,7 +618,7 @@ stages:
               artifactName: 'Metadata_$(System.StageName)'
 
 - ${{ each env in parameters.environments }}:
-  - stage: ProvisionEnvLoop_Hosted_${{ env.key }}
+  - stage: Provision_Hosted_${{ env.key }}
     displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     jobs:
@@ -711,7 +711,7 @@ stages:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
                 artifactName: 'Metadata_$(System.StageName)'
 
-  - stage: ProvisionEnvLoop_LocalFallback_${{ env.key }}
+  - stage: Provision_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
     jobs:
@@ -811,7 +811,7 @@ stages:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
                 artifactName: 'Metadata_$(System.StageName)'
         
-  - stage: ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+  - stage: Provision_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     jobs:
@@ -937,17 +937,17 @@ stages:
     - ${{ each scope in parameters.provisionScopes }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ scope }}
+          artifact: Metadata_Provision_${{ scope }}_${{ mode }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ mode }}_${{ scope }}'
-    
+          displayName: 'Download Metadata_Provision_${{ scope }}_${{ mode }}'
+
     # Dynamic environment loop modes
     - ${{ each env in parameters.environments }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
+          artifact: Metadata_Provision_${{ env.key }}_${{ mode }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ mode }}_${{ env.key }}'
+          displayName: 'Download Metadata_Provision_${{ env.key }}_${{ mode }}'
 
     - task: PowerShell@2
       displayName: 'Merge Metadata Files'
