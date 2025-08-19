@@ -67,7 +67,6 @@ variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
-  environmentKeys: ${{ keys(variables.environments) }}
 
 stages:
 - stage: ProvisionSubscription_Hosted
@@ -943,12 +942,12 @@ stages:
           displayName: 'Download Metadata_Provision_${{ mode }}_${{ scope }}'
     
     # Dynamic environment loop modes
-    - ${{ each envKey in variables.environmentKeys }}:
+    - ${{ each env in parameters.environments }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ envKey }}
+          artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ mode }}_${{ envKey }}'
+          displayName: 'Download Metadata_Provision_${{ mode }}_${{ env.key }}'
 
     - task: PowerShell@2
       displayName: 'Merge Metadata Files'
