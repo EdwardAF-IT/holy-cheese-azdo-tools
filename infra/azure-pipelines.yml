@@ -55,6 +55,20 @@ variables:
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
 
+  - name: provisionModes
+    value:
+      - Hosted
+      - LocalFallback
+      - LocalFlagDriven
+
+  - name: provisionScopes
+    value:
+      - Subscription
+      - Shared
+
+  - name: environmentKeys
+    value: ${{ keys(variables.environments) }}
+
 stages:
 - stage: ProvisionSubscription_Hosted
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
@@ -921,17 +935,20 @@ stages:
     - checkout: self
 
     # Static provisioning modes
-    - ${{ each mode in ['Subscription_Hosted', 'Subscription_LocalFallback', 'Subscription_LocalFlagDriven', 'Shared_Hosted', 'Shared_LocalFallback', 'Shared_LocalFlagDriven'] }}:
-      - download: current
-        artifact: Metadata_Provision${{ mode }}
-        continueOnError: true
-
-    # Dynamic environment loop modes
-    - ${{ each env in parameters.environments }}:
-      - ${{ each mode in ['Hosted', 'LocalFallback', 'LocalFlagDriven'] }}:
+    - ${{ each scope in variables.provisionScopes }}:
+      - ${{ each mode in variables.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
+          artifact: Metadata_Provision_${{ mode }}_${{ scope }}
           continueOnError: true
+          displayName: 'Download Metadata_Provision_${{ mode }}_${{ scope }}'
+    
+    # Dynamic environment loop modes
+    - ${{ each envKey in variables.environmentKeys }}:
+      - ${{ each mode in variables.provisionModes }}:
+        - download: current
+          artifact: Metadata_Provision_${{ mode }}_${{ envKey }}
+          continueOnError: true
+          displayName: 'Download Metadata_Provision_${{ mode }}_${{ envKey }}'
 
     - task: PowerShell@2
       displayName: 'Merge Metadata Files'
