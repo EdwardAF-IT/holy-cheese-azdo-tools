@@ -50,12 +50,23 @@ parameters:
         resourceGroup: 'AzdoTools-RG-Prod'
         environmentDisplayName: 'AzdoTools-Production' 
 
+  - name: provisionModes
+    type: object
+    default:
+      - Hosted
+      - LocalFallback
+      - LocalFlagDriven
+
+  - name: provisionScopes
+    type: object
+    default:
+      - Subscription
+      - Shared
+
 variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
-  provisionModes: [ 'Hosted', 'LocalFallback', 'LocalFlagDriven' ]
-  provisionScopes: [ 'Subscription', 'Shared' ]
   environmentKeys: ${{ keys(variables.environments) }}
 
 stages:
@@ -924,8 +935,8 @@ stages:
     - checkout: self
 
     # Static provisioning modes
-    - ${{ each scope in variables.provisionScopes }}:
-      - ${{ each mode in variables.provisionModes }}:
+    - ${{ each scope in parameters.provisionScopes }}:
+      - ${{ each mode in parameters.provisionModes }}:
         - download: current
           artifact: Metadata_Provision_${{ mode }}_${{ scope }}
           continueOnError: true
@@ -933,7 +944,7 @@ stages:
     
     # Dynamic environment loop modes
     - ${{ each envKey in variables.environmentKeys }}:
-      - ${{ each mode in variables.provisionModes }}:
+      - ${{ each mode in parameters.provisionModes }}:
         - download: current
           artifact: Metadata_Provision_${{ mode }}_${{ envKey }}
           continueOnError: true
