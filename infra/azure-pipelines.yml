@@ -51,9 +51,14 @@ parameters:
         environmentDisplayName: 'AzdoTools-Production' 
 
 variables:
-  useHostedAgent: ${{ parameters.useHostedAgent }}
-  sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
-  sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
+  - name: useHostedAgent
+    value: ${{ parameters.useHostedAgent }}
+
+  - name: sharedResourceGroup
+    value: ${{ parameters.appName }}-RG-Shared
+
+  - name: sharedEnvironmentDisplayName
+    value: ${{ parameters.appName }}-Shared
 
   - name: provisionModes
     value:
