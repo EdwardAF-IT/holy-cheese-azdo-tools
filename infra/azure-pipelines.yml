@@ -54,13 +54,8 @@ variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
-  provisionModes: 
-    - Hosted
-    - LocalFallback
-    - LocalFlagDriven
-  provisionScopes:
-    - Subscription
-    - Shared
+  provisionModes: [ 'Hosted', 'LocalFallback', 'LocalFlagDriven' ]
+  provisionScopes: [ 'Subscription', 'Shared' ]
   environmentKeys: ${{ keys(variables.environments) }}
 
 stages:
