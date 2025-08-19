@@ -69,7 +69,7 @@ variables:
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
 
 stages:
-- stage: ProvisionSubscription_Hosted
+- stage: Provision_Hosted_Subscription
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   jobs:
@@ -148,7 +148,7 @@ stages:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'Metadata_$(System.StageName)'
 
-- stage: ProvisionSubscription_LocalFallback
+- stage: Provision_LocalFallback_Subscription
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   jobs:
@@ -245,7 +245,7 @@ stages:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'Metadata_$(System.StageName)'
 
-- stage: ProvisionSubscription_LocalFlagDriven
+- stage: Provision_LocalFlagDriven_Subscription
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   jobs:
@@ -336,7 +336,7 @@ stages:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'Metadata_$(System.StageName)'
         
-- stage: ProvisionShared_Hosted
+- stage: Provision_Hosted_Shared
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
   jobs:
@@ -428,7 +428,7 @@ stages:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
               artifactName: 'Metadata_$(System.StageName)'
 
-- stage: ProvisionShared_LocalFallback
+- stage: Provision_LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
   jobs:
@@ -523,7 +523,7 @@ stages:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
               artifactName: 'Metadata_$(System.StageName)'
 
-- stage: ProvisionShared_LocalFlagDriven
+- stage: Provision_LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
   jobs:
@@ -914,12 +914,12 @@ stages:
 - stage: MergeProvisionMetadata
   displayName: 'Merge Provisioning Metadata'
   dependsOn:
-    - ProvisionSubscription_Hosted
-    - ProvisionSubscription_LocalFallback
-    - ProvisionSubscription_LocalFlagDriven
-    - ProvisionShared_Hosted
-    - ProvisionShared_LocalFallback
-    - ProvisionShared_LocalFlagDriven
+    - Provision_Hosted_Subscription
+    - Provision_LocalFallback_Subscription
+    - Provision_LocalFlagDriven_Subscription
+    - Provision_Hosted_Shared
+    - Provision_LocalFallback_Shared
+    - Provision_LocalFlagDriven_Shared
     - ${{ each env in parameters.environments }}:
         - Provision_Hosted_${{ env.key }}
         - Provision_LocalFallback_${{ env.key }}
@@ -937,17 +937,17 @@ stages:
     - ${{ each scope in parameters.provisionScopes }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ scope }}_${{ mode }}
+          artifact: Metadata_Provision_${{ mode }}_${{ scope }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ scope }}_${{ mode }}'
+          displayName: 'Download Metadata_Provision_${{ mode }}_${{ scope }}'
 
     # Dynamic environment loop modes
     - ${{ each env in parameters.environments }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ env.key }}_${{ mode }}
+          artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ env.key }}_${{ mode }}'
+          displayName: 'Download Metadata_Provision_${{ mode }}_${{ env.key }}'
 
     - task: PowerShell@2
       displayName: 'Merge Metadata Files'
@@ -967,12 +967,12 @@ stages:
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
-    - ProvisionSubscription_Hosted
-    - ProvisionSubscription_LocalFallback
-    - ProvisionSubscription_LocalFlagDriven
-    - ProvisionShared_Hosted
-    - ProvisionShared_LocalFallback
-    - ProvisionShared_LocalFlagDriven
+    - Provision_Hosted_Subscription
+    - Provision_LocalFallback_Subscription
+    - Provision_LocalFlagDriven_Subscription
+    - Provision_Hosted_Shared
+    - Provision_LocalFallback_Shared
+    - Provision_LocalFlagDriven_Shared
     - ${{ each env in parameters.environments }}:
         - Provision_Hosted_${{ env.key }}
         - Provision_LocalFallback_${{ env.key }}
