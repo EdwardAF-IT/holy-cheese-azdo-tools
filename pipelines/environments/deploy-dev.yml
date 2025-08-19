@@ -21,7 +21,7 @@ variables:
 resources:
   pipelines:
     - pipeline: infraProvision
-      source: AzdoTools-Infrastructure
+      source: azdo-tools-infrastructure
       trigger: none
 
 stages:

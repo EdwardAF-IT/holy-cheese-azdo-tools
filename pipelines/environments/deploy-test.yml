@@ -17,10 +17,10 @@ variables:
 resources:
   pipelines:
     - pipeline: infraProvision
-      source: AzdoTools-Infrastructure
+      source: azdo-tools-infrastructure
       trigger: none
     - pipeline: devBuild
-      source: AzdoTools-Dev-Build
+      source: azdo-tools-app-dev
       trigger: none
 
 stages:

@@ -17,10 +17,10 @@ variables:
 resources:
   pipelines:
     - pipeline: infraProvision
-      source: AzdoTools-Infrastructure
+      source: azdo-tools-infrastructure
       trigger: none
-    - pipeline: testDeploy
-      source: AzdoTools-Test-Deploy
+    - pipeline: testBuild
+      source: azdo-tools-app-test
       trigger: none
 
 stages:
@@ -34,7 +34,7 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - download: testDeploy
+    - download: testBuild
       artifact: ${{ variables.metadataArtifactName }}
 
     - task: PowerShell@2
@@ -45,7 +45,7 @@ stages:
         arguments: >
           -MetadataPath "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/artifact-metadata.json"
 
-    - download: testDeploy
+    - download: testBuild
       artifact: ${{ variables.provisionArtifactName }}
 
     - task: PowerShell@2
