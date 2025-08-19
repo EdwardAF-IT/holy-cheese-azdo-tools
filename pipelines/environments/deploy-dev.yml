@@ -14,8 +14,8 @@ variables:
   notes: 'Deploying to dev for internal validation'
   healthCheckUrl: 'https://azdotools-dev.azurewebsites.net/api/health'
   metadataArtifactName: 'Metadata'
-  provisionArtifactName: 'ProvisionResult'
-  manifestPath: '$(Pipeline.Workspace)/manifest/manifest.json'
+  provisionArtifactName: 'ProvisionResult_Final'
+  manifestPath: '$(Pipeline.Workspace)/InfraManifest/manifest.json'
   artifactName: 'functionapp'
 
 resources:
@@ -25,39 +25,51 @@ resources:
       trigger: none
 
 stages:
+- stage: DownloadInfraArtifacts
+  displayName: 'Download Infra Artifacts'
+  jobs:
+    - job: FetchInfra
+      displayName: 'Fetch InfraManifest and ProvisionResult_Final'
+      steps:
+        - download: infraProducer
+          artifact: InfraManifest
 
-# 🧪 Stage 1: Validate Infra
+        - download: infraProducer
+          artifact: ProvisionResult_Final
+
 - stage: ValidateInfra
   displayName: 'Validate Dev Environment Provisioning'
+  dependsOn: DownloadInfraArtifacts
   jobs:
-  - job: ValidateDevInfra
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - download: infraProvision
-      artifact: ${{ variables.metadataArtifactName }}
+    - job: ValidateDevInfra
+      pool:
+        vmImage: 'ubuntu-latest'
+      steps:
+        - task: PowerShell@2
+          displayName: 'Read Artifact Metadata'
+          inputs:
+            targetType: 'filePath'
+            filePath: '$(Build.SourcesDirectory)/scripts/Read-ArtifactMetadata.ps1'
+            arguments: >
+              -MetadataPath "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/artifact-metadata.json"
 
-    - task: PowerShell@2
-      displayName: 'Read Artifact Metadata'
-      inputs:
-        targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/scripts/Read-ArtifactMetadata.ps1'
-        arguments: >
-          -MetadataPath "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/artifact-metadata.json"
+        - script: |
+            if [ ! -f "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)" ]; then
+              echo "##vso[task.logissue type=error]Provision result file not found at expected path: $(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
+              exit 1
+            fi
+          displayName: 'Validate Provision Result File Exists'
+          failOnStderr: true
 
-    - download: infraProvision
-      artifact: ${{ variables.provisionArtifactName }}
+        - task: PowerShell@2
+          displayName: 'Validate Provisioning Result'
+          inputs:
+            targetType: 'filePath'
+            filePath: '$(Build.SourcesDirectory)/scripts/Validate-ProvisionResult.ps1'
+            arguments: >
+              -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
+              -EnvName "dev"
 
-    - task: PowerShell@2
-      displayName: 'Validate Provisioning Result'
-      inputs:
-        targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/scripts/Validate-ProvisionResult.ps1'
-        arguments: >
-          -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
-          -EnvName "dev"
-
-# 🧪 Stage 2: Build and Test
 - stage: BuildAndTest
   displayName: 'Build and Run Unit Tests'
   dependsOn: ValidateInfra
@@ -82,7 +94,6 @@ stages:
         projects: '**/*UnitTests.csproj'
         arguments: '--configuration Release --no-build'
 
-# 🚀 Stage 3: Deploy
 - stage: Deploy
   displayName: 'Deploy to Dev Environment'
   dependsOn: BuildAndTest

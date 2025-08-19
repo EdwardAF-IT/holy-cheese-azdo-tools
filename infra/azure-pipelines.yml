@@ -898,6 +898,57 @@ stages:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
                 artifactName: 'Metadata_$(System.StageName)'
 
+- stage: MergeProvisionMetadata
+  displayName: 'Merge Provisioning Metadata'
+  dependsOn:
+    - ProvisionSubscription_Hosted
+    - ProvisionSubscription_LocalFallback
+    - ProvisionSubscription_LocalFlagDriven
+    - ProvisionShared_Hosted
+    - ProvisionShared_LocalFallback
+    - ProvisionShared_LocalFlagDriven
+    - ${{ each env in parameters.environments }}:
+        - ProvisionEnvLoop_Hosted_${{ env.key }}
+        - ProvisionEnvLoop_LocalFallback_${{ env.key }}
+        - ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+  condition: always()
+  jobs:
+  - job: MergeMetadataJob
+    displayName: 'Merge Metadata Files'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+
+    # Static provisioning modes
+    - ${{ each env in ['Subscription', 'Shared'] }}:
+      - ${{ each mode in ['Hosted', 'LocalFallback', 'LocalFlagDriven'] }}:      
+      - download: current
+        artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
+        continueOnError: true
+
+    # Dynamic environment loop modes
+    - ${{ each env in parameters.environments }}:
+      - ${{ each mode in ['Hosted', 'LocalFallback', 'LocalFlagDriven'] }}:
+        - download: current
+          artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
+          continueOnError: true
+
+    - task: PowerShell@2
+      displayName: 'Merge Metadata Files'
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(Build.SourcesDirectory)/infra/scripts/Merge-ArtifactMetadata.ps1'
+        arguments: >
+          -MetadataRoot "$(Pipeline.Workspace)"
+          -OutputPath "$(Pipeline.Workspace)/merged/manifest.json"
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Infra Manifest'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/merged'
+        artifactName: 'InfraManifest'
+
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
