@@ -51,28 +51,17 @@ parameters:
         environmentDisplayName: 'AzdoTools-Production' 
 
 variables:
-  - name: useHostedAgent
-    value: ${{ parameters.useHostedAgent }}
-
-  - name: sharedResourceGroup
-    value: ${{ parameters.appName }}-RG-Shared
-
-  - name: sharedEnvironmentDisplayName
-    value: ${{ parameters.appName }}-Shared
-
-  - name: provisionModes
-    value:
-      - Hosted
-      - LocalFallback
-      - LocalFlagDriven
-
-  - name: provisionScopes
-    value:
-      - Subscription
-      - Shared
-
-  - name: environmentKeys
-    value: ${{ keys(variables.environments) }}
+  useHostedAgent: ${{ parameters.useHostedAgent }}
+  sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
+  sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
+  provisionModes: 
+    - Hosted
+    - LocalFallback
+    - LocalFlagDriven
+  provisionScopes:
+    - Subscription
+    - Shared
+  environmentKeys: ${{ keys(variables.environments) }}
 
 stages:
 - stage: ProvisionSubscription_Hosted
