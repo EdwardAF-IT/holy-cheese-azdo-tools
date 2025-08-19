@@ -950,6 +950,16 @@ stages:
           displayName: 'Download Metadata_Provision_${{ mode }}_${{ env.key }}'
 
     - task: PowerShell@2
+      displayName: 'Ensure merged directory exists'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $mergedPath = "$(Pipeline.Workspace)/merged"
+          if (-not (Test-Path $mergedPath)) {
+            New-Item -ItemType Directory -Path $mergedPath | Out-Null
+          }
+
+    - task: PowerShell@2
       displayName: 'Merge Metadata Files'
       inputs:
         targetType: 'filePath'
