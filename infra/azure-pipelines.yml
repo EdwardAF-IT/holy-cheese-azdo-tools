@@ -921,9 +921,9 @@ stages:
     - ProvisionShared_LocalFallback
     - ProvisionShared_LocalFlagDriven
     - ${{ each env in parameters.environments }}:
-        - ProvisionEnvLoop_Hosted_${{ env.key }}
-        - ProvisionEnvLoop_LocalFallback_${{ env.key }}
-        - ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+        - Provision_Hosted_${{ env.key }}
+        - Provision_LocalFallback_${{ env.key }}
+        - Provision_LocalFlagDriven_${{ env.key }}
   condition: always()
   jobs:
   - job: MergeMetadataJob
@@ -974,9 +974,9 @@ stages:
     - ProvisionShared_LocalFallback
     - ProvisionShared_LocalFlagDriven
     - ${{ each env in parameters.environments }}:
-        - ProvisionEnvLoop_Hosted_${{ env.key }}
-        - ProvisionEnvLoop_LocalFallback_${{ env.key }}
-        - ProvisionEnvLoop_LocalFlagDriven_${{ env.key }}
+        - Provision_Hosted_${{ env.key }}
+        - Provision_LocalFallback_${{ env.key }}
+        - Provision_LocalFlagDriven_${{ env.key }}
   condition: always()
   jobs:
   - job: VerifyProvisioning
