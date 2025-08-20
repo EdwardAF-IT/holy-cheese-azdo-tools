@@ -877,7 +877,6 @@ stages:
         - download: current
           artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
           continueOnError: true
-          failOnStderr: false
           displayName: 'Download ProvisionMetadata_${{ mode }}_${{ scope }}'
 
     # Dynamic environment loop modes
@@ -886,7 +885,6 @@ stages:
         - download: current
           artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
           continueOnError: true
-          failOnStderr: false
           displayName: 'Download ProvisionMetadata_${{ mode }}_${{ env.key }}'
 
     - task: PowerShell@2
