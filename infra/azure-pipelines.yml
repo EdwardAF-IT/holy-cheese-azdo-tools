@@ -70,10 +70,19 @@ variables:
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
 
 stages:
+- stage: Provision_Subscription_Header
+  displayName: '🔹 Subscription-Level Provisioning'
+  condition: always()
+  jobs:
+  - job: NoOp
+    condition: false
+    steps:
+    - script: echo "Visual header only"
+
 - stage: Provision_Hosted_Subscription
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
-  dependsOn: []
+  dependsOn: [Provision_Subscription_Header]
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
     pool:
@@ -146,7 +155,7 @@ stages:
 - stage: Provision_LocalFallback_Subscription
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
-  dependsOn: [Provision_Hosted_Subscription]
+  dependsOn: [Provision_Subscription_Header]
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     pool:
@@ -237,7 +246,7 @@ stages:
 - stage: Provision_LocalFlagDriven_Subscription
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
-  dependsOn: [Provision_Hosted_Subscription]
+  dependsOn: [Provision_Subscription_Header]
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     pool:
@@ -319,9 +328,19 @@ stages:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'ProvisionMetadata_$(System.StageName)'
         
+- stage: Provision_Shared_Header
+  displayName: '🔹 Shared Resource Provisioning'
+  condition: always()
+  jobs:
+  - job: NoOp
+    condition: false
+    steps:
+    - script: echo "Visual header only"
+
 - stage: Provision_Hosted_Shared
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
+  dependsOn: [Provision_Shared_Header]
   jobs:
   - deployment: ProvisionSharedResources_HostedAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -407,6 +426,7 @@ stages:
 - stage: Provision_LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
+  dependsOn: [Provision_Shared_Header]
   jobs:
   - deployment: ProvisionSharedResources_FallbackToLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -495,6 +515,7 @@ stages:
 - stage: Provision_LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
+  dependsOn: [Provision_Shared_Header]
   jobs:
   - deployment: ProvisionSharedResources_SpecifiedLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -580,9 +601,19 @@ stages:
               artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - ${{ each env in parameters.environments }}:
+  - stage: Provision_${{ env.key }}_Header
+    displayName: '🔹 ${{ env.key }} Environment Provisioning'
+    condition: always()
+    jobs:
+    - job: NoOp
+      condition: false
+      steps:
+      - script: echo "Visual header only"
+
   - stage: Provision_Hosted_${{ env.key }}
     displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
+    dependsOn: [Provision_${{ env.key }}_Header]
     jobs:
     - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -669,6 +700,7 @@ stages:
   - stage: Provision_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
+    dependsOn: [Provision_${{ env.key }}_Header]
     jobs:
     - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -762,6 +794,7 @@ stages:
   - stage: Provision_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
+    dependsOn: [Provision_${{ env.key }}_Header]
     jobs:
     - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -919,7 +952,12 @@ stages:
             New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
           }
     
-          Copy-Item "$(Pipeline.Workspace)/merged/manifest.json" -Destination $publishDir -Force
+         $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
+         if (Test-Path $manifestPath) {
+           Copy-Item $manifestPath -Destination $publishDir -Force
+         } else {
+           Write-Host "⚠️ Manifest not found, skipping copy"
+         }
 
     - task: PowerShell@2
       displayName: 'Mark Job as Succeeded if Manifest Exists'

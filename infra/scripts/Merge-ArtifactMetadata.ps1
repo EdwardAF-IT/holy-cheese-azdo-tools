@@ -20,6 +20,13 @@ if ($merged.Count -eq 0) {
     Write-Warning "⚠️ No metadata files found—writing empty manifest."
     @() | ConvertTo-Json -Depth 5 | Set-Content $OutputPath
 } else {
-    $merged | ConvertTo-Json -Depth 10 | Set-Content $OutputPath
+    $merged | ConvertTo-Json -Depth 10 | Set-Content -Path $OutputPath
     Write-Host "📄 Final merged manifest written to: $OutputPath"
+
+    if (Test-Path $OutputPath) {
+        Write-Host "✅ Verified manifest exists at: $OutputPath"
+    } else {
+        Write-Host "❌ Manifest write failed—file not found at: $OutputPath"
+        exit 1
+    }
 }
