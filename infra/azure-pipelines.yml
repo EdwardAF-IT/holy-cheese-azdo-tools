@@ -955,12 +955,12 @@ stages:
             New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
           }
     
-         $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
-         if (Test-Path $manifestPath) {
-           Copy-Item $manifestPath -Destination $publishDir -Force
-         } else {
-           Write-Host "⚠️ Manifest not found, skipping copy"
-         }
+          $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
+          if (Test-Path $manifestPath) {
+            Copy-Item $manifestPath -Destination $publishDir -Force
+          } else {
+            Write-Host "⚠️ Manifest not found, skipping copy"
+          }
 
     - task: PowerShell@2
       displayName: 'Mark Job as Succeeded if Manifest Exists'
