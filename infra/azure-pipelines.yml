@@ -701,7 +701,8 @@ stages:
   - stage: Provision_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
-    dependsOn: [Provision_${{ env.key }}_Header]
+    dependsOn:
+      - Provision_${{ env.key }}_Header
     jobs:
     - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -795,7 +796,8 @@ stages:
   - stage: Provision_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
-    dependsOn: [Provision_${{ env.key }}_Header]
+    dependsOn:
+      - Provision_${{ env.key }}_Header
     jobs:
     - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
