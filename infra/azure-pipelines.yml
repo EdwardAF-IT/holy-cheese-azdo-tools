@@ -73,6 +73,7 @@ stages:
 - stage: Provision_Hosted_Subscription
   displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
+  dependsOn: []
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
     pool:
@@ -145,6 +146,7 @@ stages:
 - stage: Provision_LocalFallback_Subscription
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
+  dependsOn: [Provision_Hosted_Subscription]
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     pool:
@@ -235,6 +237,7 @@ stages:
 - stage: Provision_LocalFlagDriven_Subscription
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
+  dependsOn: [Provision_Hosted_Subscription]
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     pool:
@@ -916,7 +919,6 @@ stages:
             New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
           }
     
-          Copy-Item "$(Pipeline.Workspace)/Final/provision-results.json" -Destination $publishDir -Force
           Copy-Item "$(Pipeline.Workspace)/merged/manifest.json" -Destination $publishDir -Force
 
     - task: PowerShell@2
@@ -1064,7 +1066,6 @@ stages:
           }
     
           Copy-Item "$(Pipeline.Workspace)/Final/provision-results.json" -Destination $publishDir -Force
-          Copy-Item "$(Pipeline.Workspace)/merged/manifest.json" -Destination $publishDir -Force
 
     # Publish the merged result file
     - task: PublishPipelineArtifact@1
