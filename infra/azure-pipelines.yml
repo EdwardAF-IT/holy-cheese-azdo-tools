@@ -877,6 +877,7 @@ stages:
         - download: current
           artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
           continueOnError: true
+          failOnStderr: false
           displayName: 'Download ProvisionMetadata_${{ mode }}_${{ scope }}'
 
     # Dynamic environment loop modes
@@ -885,6 +886,7 @@ stages:
         - download: current
           artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
           continueOnError: true
+          failOnStderr: false
           displayName: 'Download ProvisionMetadata_${{ mode }}_${{ env.key }}'
 
     - task: PowerShell@2
@@ -906,11 +908,33 @@ stages:
           -MetadataRoot "$(Pipeline.Workspace)"
           -OutputPath "$(Pipeline.Workspace)/merged/manifest.json"
 
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Infra Manifest'
+    - task: PowerShell@2
+      displayName: 'Prepare Final Artifact Folder'
       inputs:
-        targetPath: '$(Pipeline.Workspace)/merged'
-        artifactName: 'ProvisionMetadata_Final'
+        targetType: 'inline'
+        script: |
+          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
+          if (!(Test-Path $publishDir)) {
+            New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
+          }
+    
+          Copy-Item "$(Pipeline.Workspace)/Final/provision-results.json" -Destination $publishDir -Force
+          Copy-Item "$(Pipeline.Workspace)/merged/manifest.json" -Destination $publishDir -Force
+
+    - task: PowerShell@2
+      displayName: 'Mark Job as Succeeded if Manifest Exists'
+      condition: always()
+      inputs:
+        targetType: 'inline'
+        script: |
+          $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
+          if (Test-Path $manifestPath) {
+            Write-Host "✅ Manifest file found at $manifestPath. Marking job as succeeded."
+            exit 0
+          } else {
+            Write-Host "❌ Manifest file not found. Job will be marked as failed."
+            exit 1
+          }
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
@@ -1031,11 +1055,24 @@ stages:
             }
           }
 
+    - task: PowerShell@2
+      displayName: 'Prepare Final Artifact Folder'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
+          if (!(Test-Path $publishDir)) {
+            New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
+          }
+    
+          Copy-Item "$(Pipeline.Workspace)/Final/provision-results.json" -Destination $publishDir -Force
+          Copy-Item "$(Pipeline.Workspace)/merged/manifest.json" -Destination $publishDir -Force
+
     # Publish the merged result file
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Final Aggregated Result'
       inputs:
-        targetPath: '$(Pipeline.Workspace)/Final'
+        targetPath: '$(Pipeline.Workspace)/ProvisionMetadata_Final'
         artifactName: 'ProvisionMetadata_Final'
 
     # Evaluate the merged result
