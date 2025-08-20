@@ -4,6 +4,7 @@ trigger:
       - main
   paths:
     include:
+      - infra/azure-pipelines.yml
       - infra/environments/**
       - infra/modules/**
       - infra/scripts/**
@@ -119,7 +120,7 @@ stages:
           -HostType $(hostType)
           -Result $(DeployInfra.SubHostedExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+    
     - task: PowerShell@2
       displayName: 'Write Artifact Metadata'
       condition: always()
@@ -133,20 +134,13 @@ stages:
           -Commit $(Build.SourceVersion)
           -Version $(Build.BuildNumber)
           -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-
+    
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Stage Result'
+      displayName: 'Publish Provision Metadata'
       condition: always()
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'ProvisionResult_$(System.StageName)'
-
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Metadata Artifact'
-      condition: always()
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'Metadata_$(System.StageName)'
+        artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: Provision_LocalFallback_Subscription
   displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
@@ -216,7 +210,7 @@ stages:
           -HostType $(hostType)
           -Result $(DeployInfra.DeployInfraExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+    
     - task: PowerShell@2
       displayName: 'Write Artifact Metadata'
       condition: always()
@@ -230,20 +224,13 @@ stages:
           -Commit $(Build.SourceVersion)
           -Version $(Build.BuildNumber)
           -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-
+    
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Stage Result'
+      displayName: 'Publish Provision Metadata'
       condition: always()
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'ProvisionResult_$(System.StageName)'
-
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Metadata Artifact'
-      condition: always()
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'Metadata_$(System.StageName)'
+        artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: Provision_LocalFlagDriven_Subscription
   displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
@@ -307,7 +294,7 @@ stages:
           -HostType $(hostType)
           -Result $(DeployInfra.SubFlagExitCode)
           -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+    
     - task: PowerShell@2
       displayName: 'Write Artifact Metadata'
       condition: always()
@@ -321,20 +308,13 @@ stages:
           -Commit $(Build.SourceVersion)
           -Version $(Build.BuildNumber)
           -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-
+    
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Stage Result'
+      displayName: 'Publish Provision Metadata'
       condition: always()
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'ProvisionResult_$(System.StageName)'
-
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Metadata Artifact'
-      condition: always()
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'Metadata_$(System.StageName)'
+        artifactName: 'ProvisionMetadata_$(System.StageName)'
         
 - stage: Provision_Hosted_Shared
   condition: eq(variables.useHostedAgent, true)
@@ -399,7 +379,7 @@ stages:
                 -HostType $(hostType)
                 -Result $(DeploySharedInfra.SharedHostedExitCode)
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+          
           - task: PowerShell@2
             displayName: 'Write Artifact Metadata'
             condition: always()
@@ -413,20 +393,13 @@ stages:
                 -Commit $(Build.SourceVersion)
                 -Version $(Build.BuildNumber)
                 -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-
+          
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
+            displayName: 'Publish Provision Metadata'
             condition: always()
             inputs:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Metadata Artifact'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'Metadata_$(System.StageName)'
+              artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: Provision_LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -494,7 +467,7 @@ stages:
                 -HostType $(hostType)
                 -Result $(DeploySharedFallbackInfra.SharedFallbackExitCode)
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+          
           - task: PowerShell@2
             displayName: 'Write Artifact Metadata'
             condition: always()
@@ -508,20 +481,13 @@ stages:
                 -Commit $(Build.SourceVersion)
                 -Version $(Build.BuildNumber)
                 -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-
+          
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
+            displayName: 'Publish Provision Metadata'
             condition: always()
             inputs:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Metadata Artifact'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'Metadata_$(System.StageName)'
+              artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: Provision_LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
@@ -588,7 +554,7 @@ stages:
                 -HostType $(hostType)
                 -Result $(DeploySharedInfra.SharedLocalExitCode)
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+          
           - task: PowerShell@2
             displayName: 'Write Artifact Metadata'
             condition: always()
@@ -602,20 +568,13 @@ stages:
                 -Commit $(Build.SourceVersion)
                 -Version $(Build.BuildNumber)
                 -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-
+          
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Stage Result'
+            displayName: 'Publish Provision Metadata'
             condition: always()
             inputs:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionResult_$(System.StageName)'
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Metadata Artifact'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'Metadata_$(System.StageName)'
+              artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - ${{ each env in parameters.environments }}:
   - stage: Provision_Hosted_${{ env.key }}
@@ -682,7 +641,7 @@ stages:
                   -HostType $(hostType)
                   -Result $(DeployEnvInfra.EnvHostedExitCode)
                   -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+            
             - task: PowerShell@2
               displayName: 'Write Artifact Metadata'
               condition: always()
@@ -696,20 +655,13 @@ stages:
                   -Commit $(Build.SourceVersion)
                   -Version $(Build.BuildNumber)
                   -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-  
+            
             - task: PublishPipelineArtifact@1
-              displayName: 'Publish Stage Result'
+              displayName: 'Publish Provision Metadata'
               condition: always()
               inputs:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'ProvisionResult_$(System.StageName)'
-
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Metadata Artifact'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'Metadata_$(System.StageName)'
+                artifactName: 'ProvisionMetadata_$(System.StageName)'
 
   - stage: Provision_LocalFallback_${{ env.key }}
     displayName: 'Env ${{ env.key }} Fallback to Local Agent'
@@ -782,7 +734,7 @@ stages:
                   -HostType $(hostType)
                   -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
                   -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+            
             - task: PowerShell@2
               displayName: 'Write Artifact Metadata'
               condition: always()
@@ -796,20 +748,13 @@ stages:
                   -Commit $(Build.SourceVersion)
                   -Version $(Build.BuildNumber)
                   -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-  
+            
             - task: PublishPipelineArtifact@1
-              displayName: 'Publish Stage Result'
+              displayName: 'Publish Provision Metadata'
               condition: always()
               inputs:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'ProvisionResult_$(System.StageName)'
-
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Metadata Artifact'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'Metadata_$(System.StageName)'
+                artifactName: 'ProvisionMetadata_$(System.StageName)'
         
   - stage: Provision_LocalFlagDriven_${{ env.key }}
     displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
@@ -882,7 +827,7 @@ stages:
                   -HostType $(hostType)
                   -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
                   -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
+            
             - task: PowerShell@2
               displayName: 'Write Artifact Metadata'
               condition: always()
@@ -896,20 +841,13 @@ stages:
                   -Commit $(Build.SourceVersion)
                   -Version $(Build.BuildNumber)
                   -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-  
+            
             - task: PublishPipelineArtifact@1
-              displayName: 'Publish Stage Result'
+              displayName: 'Publish Provision Metadata'
               condition: always()
               inputs:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'ProvisionResult_$(System.StageName)'
-
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Metadata Artifact'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'Metadata_$(System.StageName)'
+                artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: MergeProvisionMetadata
   displayName: 'Merge Provisioning Metadata'
@@ -937,17 +875,17 @@ stages:
     - ${{ each scope in parameters.provisionScopes }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ scope }}
+          artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ mode }}_${{ scope }}'
+          displayName: 'Download ProvisionMetadata_${{ mode }}_${{ scope }}'
 
     # Dynamic environment loop modes
     - ${{ each env in parameters.environments }}:
       - ${{ each mode in parameters.provisionModes }}:
         - download: current
-          artifact: Metadata_Provision_${{ mode }}_${{ env.key }}
+          artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
           continueOnError: true
-          displayName: 'Download Metadata_Provision_${{ mode }}_${{ env.key }}'
+          displayName: 'Download ProvisionMetadata_${{ mode }}_${{ env.key }}'
 
     - task: PowerShell@2
       displayName: 'Ensure merged directory exists'
@@ -972,7 +910,7 @@ stages:
       displayName: 'Publish Infra Manifest'
       inputs:
         targetPath: '$(Pipeline.Workspace)/merged'
-        artifactName: 'InfraManifest'
+        artifactName: 'ProvisionMetadata_Final'
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
@@ -1004,7 +942,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse | ForEach-Object {
+          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
             Write-Host "📦 Found: $($_.FullName)"
           }
 
@@ -1098,7 +1036,7 @@ stages:
       displayName: 'Publish Final Aggregated Result'
       inputs:
         targetPath: '$(Pipeline.Workspace)/Final'
-        artifactName: 'ProvisionResult_Final'
+        artifactName: 'ProvisionMetadata_Final'
 
     # Evaluate the merged result
     - task: PowerShell@2
