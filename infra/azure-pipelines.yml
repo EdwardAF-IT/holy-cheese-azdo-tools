@@ -613,7 +613,8 @@ stages:
   - stage: Provision_Hosted_${{ env.key }}
     displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
-    dependsOn: [Provision_${{ env.key }}_Header]
+    dependsOn:
+      - Provision_${{ env.key }}_Header
     jobs:
     - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
