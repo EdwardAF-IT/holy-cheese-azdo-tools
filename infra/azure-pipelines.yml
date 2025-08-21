@@ -917,50 +917,36 @@ stages:
     steps:
     - checkout: self
 
-    - task: PowerShell@2
-      displayName: 'Download All ProvisionMetadata Artifacts'
-      env:
-        ENVIRONMENTS_JSON: ${{ convertToJson(parameters.environments) }}
-      inputs:
-        targetType: 'inline'
-        script: |
-          . "$(Build.SourcesDirectory)/infra/scripts/Download-Artifact.ps1"
+    # Download all artifacts using YAML-native tasks
+    - ${{ each scope in parameters.provisionScopes }}:
+      - ${{ each mode in parameters.provisionModes }}:
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download ProvisionMetadata_${{ mode }}_${{ scope }}'
+          inputs:
+            artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
+            path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ scope }}
+          continueOnError: true
 
-          $workspace = "$($env:PIPELINE_WORKSPACE)"
-          $envJson = $env:ENVIRONMENTS_JSON
-          $environments = $envJson | ConvertFrom-Json
-          $envKeys = $environments.PSObject.Properties.Name
+    - ${{ each env in parameters.environments }}:
+      - ${{ each mode in parameters.provisionModes }}:
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download ProvisionMetadata_${{ mode }}_${{ env.key }}'
+          inputs:
+            artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
+            path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ env.key }}
+          continueOnError: true
 
-          $scopes = "${{ join(',', parameters.provisionScopes) }}" -split ','
-          $modes  = "${{ join(',', parameters.provisionModes) }}" -split ','
-  
-          # Static provisioning modes
-          foreach ($scope in $scopes) {
-            foreach ($mode in $modes) {
-              $artifactName = [string]::Format("ProvisionMetadata_{0}_{1}", $mode, $scope)
-              $targetPath = Join-Path $workspace $artifactName
-              Download-Artifact -artifactName $artifactName -targetPath $targetPath
-            }
-          }
-    
-          # Dynamic environment loop modes
-          foreach ($envKey in $envKeys) {
-            foreach ($mode in $modes) {
-              $artifactName = [string]::Format("ProvisionMetadata_{0}_{1}", $mode, $envKey)
-              $targetPath = Join-Path $workspace $artifactName
-              Download-Artifact -artifactName $artifactName -targetPath $targetPath
-            }
-          }
-
+    # List downloaded folders
     - task: PowerShell@2
       displayName: 'List Available Artifacts'
       inputs:
         targetType: 'inline'
         script: |
-          Get-ChildItem "$($env:PIPELINE_WORKSPACE)" -Directory | ForEach-Object {
+          Get-ChildItem "$(Pipeline.Workspace)" -Directory | ForEach-Object {
             Write-Host "📁 Artifact folder: $($_.Name)"
           }
 
+    # Ensure merged directory exists
     - task: PowerShell@2
       displayName: 'Ensure merged directory exists'
       inputs:
@@ -971,6 +957,7 @@ stages:
             New-Item -ItemType Directory -Path $mergedPath | Out-Null
           }
 
+    # Merge metadata files
     - task: PowerShell@2
       displayName: 'Merge Metadata Files'
       inputs:
@@ -980,6 +967,7 @@ stages:
           -MetadataRoot "$(Pipeline.Workspace)"
           -OutputPath "$(Pipeline.Workspace)/merged/manifest.json"
 
+    # Prepare final artifact folder
     - task: PowerShell@2
       displayName: 'Prepare Final Artifact Folder'
       inputs:
@@ -989,14 +977,14 @@ stages:
           if (!(Test-Path $publishDir)) {
             New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
           }
-    
+
           $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
           if (Test-Path $manifestPath) {
             Copy-Item $manifestPath -Destination $publishDir -Force
           } else {
             Write-Host "⚠️ Manifest not found, skipping copy"
-          }
 
+    # Mark job as succeeded if manifest exists
     - task: PowerShell@2
       displayName: 'Mark Job as Succeeded if Manifest Exists'
       condition: always()
