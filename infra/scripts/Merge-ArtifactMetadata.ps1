@@ -10,7 +10,7 @@ Get-ChildItem -Path $MetadataRoot -Recurse | ForEach-Object {
     Write-Host "📄 $($_.FullName)"
 }
 
-Get-ChildItem "$(Pipeline.Workspace)" -Directory | ForEach-Object {
+Get-ChildItem "$($env:PIPELINE_WORKSPACE)" -Directory | ForEach-Object {
     Write-Host "📁 Folder: $($_.FullName)"
 }
 
