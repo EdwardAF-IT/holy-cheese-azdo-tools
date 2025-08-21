@@ -1136,14 +1136,14 @@ stages:
         script: |
           $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
           if (Test-Path $publishDir) {
-            Write-Host "📁 Existing contents of $publishDir:"
+            Write-Host "📁 Existing contents of ${publishDir}:"
             Get-ChildItem $publishDir | ForEach-Object {
               Write-Host "  - $($_.Name)"
             }
           } else {
-            Write-Host "⚠️ $publishDir does not exist yet"
+            Write-Host "⚠️ ${publishDir} does not exist yet"
           }
-
+    
     - task: PowerShell@2
       displayName: 'Add Provision Results to Final Artifact Folder'
       inputs:
@@ -1152,13 +1152,13 @@ stages:
           $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
           if (!(Test-Path $publishDir)) {
             New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
-            Write-Host "📁 Created final artifact folder: $publishDir"
+            Write-Host "📁 Created final artifact folder: ${publishDir}"
           }
     
           $resultsFile = "$(Pipeline.Workspace)/Final/provision-results.json"
           if (Test-Path $resultsFile) {
             Copy-Item -Path $resultsFile -Destination $publishDir -Force
-            Write-Host "✅ Added provision-results.json to $publishDir"
+            Write-Host "✅ Added provision-results.json to ${publishDir}"
           } else {
             Write-Host "⚠️ provision-results.json not found, skipping copy"
           }
