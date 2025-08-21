@@ -934,15 +934,6 @@ stages:
           $scopes = "${{ join(',', parameters.provisionScopes) }}" -split ','
           $modes  = "${{ join(',', parameters.provisionModes) }}" -split ','
   
-            Write-Host "🔽 Attempting to download artifact: $artifactName"
-            try {
-              # Replace this with actual download logic if needed
-              Write-Host "✅ Found file: $artifactName → $targetPath"
-            } catch {
-              Write-Host "⚠️ Skipped missing artifact: $artifactName"
-            }
-          }
-    
           # Static provisioning modes
           foreach ($scope in $scopes) {
             foreach ($mode in $modes) {
