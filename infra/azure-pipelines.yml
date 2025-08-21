@@ -1130,16 +1130,23 @@ stages:
           }
 
     - task: PowerShell@2
-      displayName: 'Prepare Final Artifact Folder'
+      displayName: 'Add Provision Results to Final Artifact Folder'
       inputs:
         targetType: 'inline'
         script: |
           $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
           if (!(Test-Path $publishDir)) {
             New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
+            Write-Host "📁 Created final artifact folder: $publishDir"
           }
     
-          Copy-Item "$(Pipeline.Workspace)/Final/provision-results.json" -Destination $publishDir -Force
+          $resultsFile = "$(Pipeline.Workspace)/Final/provision-results.json"
+          if (Test-Path $resultsFile) {
+            Copy-Item -Path $resultsFile -Destination $publishDir -Force
+            Write-Host "✅ Added provision-results.json to $publishDir"
+          } else {
+            Write-Host "⚠️ provision-results.json not found, skipping copy"
+          }
 
     # Publish the merged result file
     - task: PublishPipelineArtifact@1
