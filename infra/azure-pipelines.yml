@@ -152,6 +152,13 @@ stages:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'ProvisionMetadata_$(System.StageName)'
 
+    - task: PowerShell@2
+      displayName: 'Log Artifact Name'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "📦 Publishing artifact: ProvisionMetadata_$(System.StageName)"
+
 - stage: Provision_LocalFallback_Subscription
   displayName: 'Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
