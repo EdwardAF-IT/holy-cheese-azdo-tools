@@ -959,6 +959,15 @@ stages:
           }
 
     - task: PowerShell@2
+      displayName: 'List Available Artifacts'
+      inputs:
+        targetType: 'inline'
+        script: |
+          Get-ChildItem "$($env:PIPELINE_WORKSPACE)" -Directory | ForEach-Object {
+            Write-Host "📁 Artifact folder: $($_.Name)"
+          }
+
+    - task: PowerShell@2
       displayName: 'Ensure merged directory exists'
       inputs:
         targetType: 'inline'
