@@ -5,6 +5,15 @@ param (
 
 Write-Host "🔍 Scanning for artifact-metadata.json files in: $MetadataRoot"
 
+Write-Host "🔍 Listing all files under $MetadataRoot:"
+Get-ChildItem -Path $MetadataRoot -Recurse | ForEach-Object {
+    Write-Host "📄 $($_.FullName)"
+}
+
+Get-ChildItem "$(Pipeline.Workspace)" -Directory | ForEach-Object {
+    Write-Host "📁 Folder: $($_.FullName)"
+}
+
 $merged = @()
 Get-ChildItem -Path $MetadataRoot -Recurse -Filter artifact-metadata.json | ForEach-Object {
     try {

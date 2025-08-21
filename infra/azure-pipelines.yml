@@ -71,7 +71,7 @@ variables:
 
 stages:
 - stage: Provision_Subscription_Header
-  displayName: '🔹 Subscription-Level Provisioning'
+  displayName: 'Subscription-Level'
   condition: always()
   jobs:
   - job: NoOp
@@ -80,7 +80,7 @@ stages:
     - script: echo "Visual header only"
 
 - stage: Provision_Hosted_Subscription
-  displayName: 'Subscription Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
+  displayName: 'Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   dependsOn: [Provision_Subscription_Header]
   jobs:
@@ -153,7 +153,7 @@ stages:
         artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: Provision_LocalFallback_Subscription
-  displayName: 'Subscription Fallback: Subscription-Level Resources (Local Agent)'
+  displayName: 'Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   dependsOn: [Provision_Subscription_Header]
   jobs:
@@ -244,7 +244,7 @@ stages:
         artifactName: 'ProvisionMetadata_$(System.StageName)'
 
 - stage: Provision_LocalFlagDriven_Subscription
-  displayName: 'Subscription Local Specified: Provision Subscription Resources via Local Agent'
+  displayName: 'Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   dependsOn: [Provision_Subscription_Header]
   jobs:
@@ -329,7 +329,7 @@ stages:
         artifactName: 'ProvisionMetadata_$(System.StageName)'
         
 - stage: Provision_Shared_Header
-  displayName: '🔹 Shared Resource Provisioning'
+  displayName: 'Shared Resources'
   condition: always()
   jobs:
   - job: NoOp
@@ -339,7 +339,7 @@ stages:
 
 - stage: Provision_Hosted_Shared
   condition: eq(variables.useHostedAgent, true)
-  displayName: 'Shared Hosted: Provision Shared Resources with Hosted Agent'
+  displayName: 'Hosted: Provision Shared Resources with Hosted Agent'
   dependsOn: [Provision_Shared_Header]
   jobs:
   - deployment: ProvisionSharedResources_HostedAgent
@@ -425,7 +425,7 @@ stages:
 
 - stage: Provision_LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
-  displayName: 'Shared Fallback: Provision Shared Resources with Local Agent'
+  displayName: 'Fallback: Provision Shared Resources with Local Agent'
   dependsOn: [Provision_Shared_Header]
   jobs:
   - deployment: ProvisionSharedResources_FallbackToLocalAgent
@@ -514,7 +514,7 @@ stages:
 
 - stage: Provision_LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
-  displayName: 'Shared Local Specified: Provision Shared Resources (Local Agent)'
+  displayName: 'Local Specified: Provision Shared Resources (Local Agent)'
   dependsOn: [Provision_Shared_Header]
   jobs:
   - deployment: ProvisionSharedResources_SpecifiedLocalAgent
@@ -602,7 +602,7 @@ stages:
 
 - ${{ each env in parameters.environments }}:
   - stage: Provision_${{ env.key }}_Header
-    displayName: '🔹 ${{ env.key }} Environment Provisioning'
+    displayName: 'Env: ${{ env.key }}'
     condition: always()
     jobs:
     - job: NoOp
@@ -611,7 +611,7 @@ stages:
       - script: echo "Visual header only"
 
   - stage: Provision_Hosted_${{ env.key }}
-    displayName: 'Env ${{ env.key }} Hosted: Deploy ${{ env.key }} via Hosted Agent'
+    displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     dependsOn:
       - Provision_${{ env.key }}_Header
@@ -699,7 +699,7 @@ stages:
                 artifactName: 'ProvisionMetadata_$(System.StageName)'
 
   - stage: Provision_LocalFallback_${{ env.key }}
-    displayName: 'Env ${{ env.key }} Fallback to Local Agent'
+    displayName: 'Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
     dependsOn:
       - Provision_${{ env.key }}_Header
@@ -794,7 +794,7 @@ stages:
                 artifactName: 'ProvisionMetadata_$(System.StageName)'
         
   - stage: Provision_LocalFlagDriven_${{ env.key }}
-    displayName: 'Env ${{ env.key }} Local Specified: Deploy to ${{ env.key }} (Local Agent)'
+    displayName: 'Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     dependsOn:
       - Provision_${{ env.key }}_Header
