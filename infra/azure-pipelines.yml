@@ -921,9 +921,9 @@ stages:
           $envJson = $env:ENVIRONMENTS_JSON
           $environments = $envJson | ConvertFrom-Json
           $envKeys = $environments.PSObject.Properties.Name
-    
-          $scopes = @(${{ join(',', parameters.provisionScopes) }}) -split ','
-          $modes = @(${{ join(',', parameters.provisionModes) }}) -split ','
+
+          $scopes = "${{ join(',', parameters.provisionScopes) }}" -split ','
+          $modes  = "${{ join(',', parameters.provisionModes) }}" -split ','
     
           function Download-Artifact {
             param (
