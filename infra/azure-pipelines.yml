@@ -917,26 +917,31 @@ stages:
     steps:
     - checkout: self
 
-    # Download all artifacts using YAML-native tasks
     - ${{ each scope in parameters.provisionScopes }}:
       - ${{ each mode in parameters.provisionModes }}:
         - task: DownloadPipelineArtifact@2
           displayName: 'Download ProvisionMetadata_${{ mode }}_${{ scope }}'
+          condition: always()
+          continueOnError: true
+          env:
+            POWERSHELL_TELEMETRY_OPTOUT: 1
+            errorActionPreference: silentlyContinue
           inputs:
             artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
             path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ scope }}
-            condition: succeededOrFailed()
-            continueOnError: true
 
     - ${{ each env in parameters.environments }}:
       - ${{ each mode in parameters.provisionModes }}:
         - task: DownloadPipelineArtifact@2
           displayName: 'Download ProvisionMetadata_${{ mode }}_${{ env.key }}'
+          condition: always()
+          continueOnError: true
+          env:
+            POWERSHELL_TELEMETRY_OPTOUT: 1
+            errorActionPreference: silentlyContinue          
           inputs:
             artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
             path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ env.key }}
-            condition: succeededOrFailed()
-            continueOnError: true
 
     # List downloaded folders
     - task: PowerShell@2
@@ -998,7 +1003,7 @@ stages:
         script: |
           $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
           if (Test-Path $manifestPath) {
-            Write-Host "✅ Manifest file found at $manifestPath. Marking job as succeeded."
+            Write-Host "##vso[task.complete result=Succeeded;]✅ Manifest file found at $manifestPath. Marking job as succeeded."
             exit 0
           } else {
             Write-Host "❌ Manifest file not found. Job will be marked as failed."
