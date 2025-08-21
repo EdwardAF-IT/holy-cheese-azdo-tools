@@ -1029,6 +1029,13 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    # Grab the previous stage's copy of the merged manifest
+    - task: DownloadPipelineArtifact@2
+    displayName: 'Download Merged Manifest Artifact'
+    inputs:
+      artifact: ProvisionMetadata_Final
+      path: $(Pipeline.Workspace)/ProvisionMetadata_Final
+
     # Download all stage-level artifacts
     - task: DownloadPipelineArtifact@2
       displayName: 'Download All Stage Results'
