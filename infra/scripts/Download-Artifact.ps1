@@ -20,6 +20,10 @@ function Download-Artifact {
     try {
         Write-Host ([string]::Format("🔍 Querying artifact list from: {0}", $artifactListUri))
         $response = Invoke-RestMethod -Uri $artifactListUri -Headers $headers -Method Get
+        Write-Host "📦 Artifacts published in this run:"
+        $response.value | ForEach-Object {
+            Write-Host (" - " + $_.name)
+        }
         $artifact = $response.value | Where-Object { $_.name -eq $artifactName }
 
         if ($null -eq $artifact) {
