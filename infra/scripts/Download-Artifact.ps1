@@ -14,8 +14,8 @@ function Download-Artifact {
         Authorization = "Bearer " + $accessToken
     }
 
-    $artifactListUri = [string]::Format("{0}{1}/_apis/pipelines/{2}/runs/{3}/artifacts?api-version=7.1-preview.1",
-        $collectionUri, $project, $pipelineId, $runId)
+    $artifactListUri = [string]::Format("{0}{1}/_apis/build/builds/{2}/artifacts?api-version=7.1-preview.5",
+    $collectionUri, $project, $runId)
 
     try {
         Write-Host ([string]::Format("🔍 Querying artifact list from: {0}", $artifactListUri))
