@@ -925,7 +925,8 @@ stages:
           inputs:
             artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
             path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ scope }}
-          continueOnError: true
+            condition: succeededOrFailed()
+            continueOnError: true
 
     - ${{ each env in parameters.environments }}:
       - ${{ each mode in parameters.provisionModes }}:
@@ -934,7 +935,8 @@ stages:
           inputs:
             artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
             path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ env.key }}
-          continueOnError: true
+            condition: succeededOrFailed()
+            continueOnError: true
 
     # List downloaded folders
     - task: PowerShell@2
@@ -968,22 +970,24 @@ stages:
           -OutputPath "$(Pipeline.Workspace)/merged/manifest.json"
 
     # Prepare final artifact folder
-    - task: PowerShell@2
-      displayName: 'Prepare Final Artifact Folder'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
-          if (!(Test-Path $publishDir)) {
-            New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
-          }
-
-          $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
-          if (Test-Path $manifestPath) {
-            Copy-Item $manifestPath -Destination $publishDir -Force
-          } else {
-            Write-Host "⚠️ Manifest not found, skipping copy"
-          }
+    task: PowerShell@2
+    displayName: 'Prepare Final Artifact Folder'
+    inputs:
+      targetType: 'inline'
+      script: |
+        $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
+        if (!(Test-Path $publishDir)) {
+          New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
+        }
+   
+        $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
+        if (Test-Path $manifestPath) {
+          Write-Host "✅ Manifest found: $manifestPath"
+          Copy-Item -Path $manifestPath -Destination $publishDir -Force
+          Write-Host "✅ Manifest copied to: $publishDir"
+        } else {
+          Write-Host "⚠️ Manifest not found, skipping copy"
+        }
 
     # Mark job as succeeded if manifest exists
     - task: PowerShell@2
