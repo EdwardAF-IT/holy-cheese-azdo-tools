@@ -970,24 +970,24 @@ stages:
           -OutputPath "$(Pipeline.Workspace)/merged/manifest.json"
 
     # Prepare final artifact folder
-    task: PowerShell@2
-    displayName: 'Prepare Final Artifact Folder'
-    inputs:
-      targetType: 'inline'
-      script: |
-        $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
-        if (!(Test-Path $publishDir)) {
-          New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
-        }
-   
-        $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
-        if (Test-Path $manifestPath) {
-          Write-Host "✅ Manifest found: $manifestPath"
-          Copy-Item -Path $manifestPath -Destination $publishDir -Force
-          Write-Host "✅ Manifest copied to: $publishDir"
-        } else {
-          Write-Host "⚠️ Manifest not found, skipping copy"
-        }
+    - task: PowerShell@2
+      displayName: 'Prepare Final Artifact Folder'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
+          if (!(Test-Path $publishDir)) {
+            New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
+          }
+      
+          $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
+          if (Test-Path $manifestPath) {
+            Write-Host "✅ Manifest found: $manifestPath"
+            Copy-Item -Path $manifestPath -Destination $publishDir -Force
+            Write-Host "✅ Manifest copied to: $publishDir"
+          } else {
+            Write-Host "⚠️ Manifest not found, skipping copy"
+          }
 
     # Mark job as succeeded if manifest exists
     - task: PowerShell@2
