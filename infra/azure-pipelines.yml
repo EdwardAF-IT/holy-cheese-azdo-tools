@@ -983,6 +983,7 @@ stages:
             Copy-Item $manifestPath -Destination $publishDir -Force
           } else {
             Write-Host "⚠️ Manifest not found, skipping copy"
+          }
 
     # Mark job as succeeded if manifest exists
     - task: PowerShell@2
