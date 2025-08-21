@@ -1130,6 +1130,21 @@ stages:
           }
 
     - task: PowerShell@2
+      displayName: 'List Existing Files in Final Artifact Folder'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
+          if (Test-Path $publishDir) {
+            Write-Host "📁 Existing contents of $publishDir:"
+            Get-ChildItem $publishDir | ForEach-Object {
+              Write-Host "  - $($_.Name)"
+            }
+          } else {
+            Write-Host "⚠️ $publishDir does not exist yet"
+          }
+
+    - task: PowerShell@2
       displayName: 'Add Provision Results to Final Artifact Folder'
       inputs:
         targetType: 'inline'
