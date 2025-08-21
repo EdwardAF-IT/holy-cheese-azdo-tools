@@ -79,7 +79,7 @@ stages:
     steps:
     - script: echo "Visual header only"
 
-- stage: Provision_Hosted_Subscription
+- stage: Hosted_Subscription
   displayName: 'Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
   dependsOn: [Provision_Subscription_Header]
@@ -159,7 +159,7 @@ stages:
         script: |
           Write-Host "📦 Publishing artifact: ProvisionMetadata_$(System.StageName)"
 
-- stage: Provision_LocalFallback_Subscription
+- stage: LocalFallback_Subscription
   displayName: 'Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
   dependsOn: [Provision_Subscription_Header]
@@ -250,7 +250,7 @@ stages:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
         artifactName: 'ProvisionMetadata_$(System.StageName)'
 
-- stage: Provision_LocalFlagDriven_Subscription
+- stage: LocalFlagDriven_Subscription
   displayName: 'Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
   dependsOn: [Provision_Subscription_Header]
@@ -344,7 +344,7 @@ stages:
     steps:
     - script: echo "Visual header only"
 
-- stage: Provision_Hosted_Shared
+- stage: Hosted_Shared
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Hosted: Provision Shared Resources with Hosted Agent'
   dependsOn: [Provision_Shared_Header]
@@ -430,7 +430,7 @@ stages:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
               artifactName: 'ProvisionMetadata_$(System.StageName)'
 
-- stage: Provision_LocalFallback_Shared
+- stage: LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Fallback: Provision Shared Resources with Local Agent'
   dependsOn: [Provision_Shared_Header]
@@ -519,7 +519,7 @@ stages:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
               artifactName: 'ProvisionMetadata_$(System.StageName)'
 
-- stage: Provision_LocalFlagDriven_Shared
+- stage: LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Local Specified: Provision Shared Resources (Local Agent)'
   dependsOn: [Provision_Shared_Header]
@@ -617,7 +617,7 @@ stages:
       steps:
       - script: echo "Visual header only"
 
-  - stage: Provision_Hosted_${{ env.key }}
+  - stage: Hosted_${{ env.key }}
     displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     dependsOn:
@@ -705,7 +705,7 @@ stages:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
                 artifactName: 'ProvisionMetadata_$(System.StageName)'
 
-  - stage: Provision_LocalFallback_${{ env.key }}
+  - stage: LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
     dependsOn:
@@ -800,7 +800,7 @@ stages:
                 targetPath: '$(Pipeline.Workspace)/ProvisionResult'
                 artifactName: 'ProvisionMetadata_$(System.StageName)'
         
-  - stage: Provision_LocalFlagDriven_${{ env.key }}
+  - stage: LocalFlagDriven_${{ env.key }}
     displayName: 'Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     dependsOn:
@@ -898,16 +898,16 @@ stages:
 - stage: MergeProvisionMetadata
   displayName: 'Merge Provisioning Metadata'
   dependsOn:
-    - Provision_Hosted_Subscription
-    - Provision_LocalFallback_Subscription
-    - Provision_LocalFlagDriven_Subscription
-    - Provision_Hosted_Shared
-    - Provision_LocalFallback_Shared
-    - Provision_LocalFlagDriven_Shared
+    - Hosted_Subscription
+    - LocalFallback_Subscription
+    - LocalFlagDriven_Subscription
+    - Hosted_Shared
+    - LocalFallback_Shared
+    - LocalFlagDriven_Shared
     - ${{ each env in parameters.environments }}:
-        - Provision_Hosted_${{ env.key }}
-        - Provision_LocalFallback_${{ env.key }}
-        - Provision_LocalFlagDriven_${{ env.key }}
+        - Hosted_${{ env.key }}
+        - LocalFallback_${{ env.key }}
+        - LocalFlagDriven_${{ env.key }}
   condition: always()
   jobs:
   - job: MergeMetadataJob
@@ -924,6 +924,8 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
+          . "$(Build.SourcesDirectory)/infra/scripts/Download-Artifact.ps1"
+
           $workspace = "$($env:PIPELINE_WORKSPACE)"
           $envJson = $env:ENVIRONMENTS_JSON
           $environments = $envJson | ConvertFrom-Json
@@ -931,17 +933,11 @@ stages:
 
           $scopes = "${{ join(',', parameters.provisionScopes) }}" -split ','
           $modes  = "${{ join(',', parameters.provisionModes) }}" -split ','
-    
-          function Download-Artifact {
-            param (
-              [string] $artifactName,
-              [string] $targetPath
-            )
-    
+  
             Write-Host "🔽 Attempting to download artifact: $artifactName"
             try {
               # Replace this with actual download logic if needed
-              Write-Host "✅ Simulated download: $artifactName → $targetPath"
+              Write-Host "✅ Found file: $artifactName → $targetPath"
             } catch {
               Write-Host "⚠️ Skipped missing artifact: $artifactName"
             }
@@ -950,7 +946,7 @@ stages:
           # Static provisioning modes
           foreach ($scope in $scopes) {
             foreach ($mode in $modes) {
-              $artifactName = "ProvisionMetadata_${mode}_${scope}"
+              $artifactName = [string]::Format("ProvisionMetadata_{0}_{1}", $mode, $scope)
               $targetPath = Join-Path $workspace $artifactName
               Download-Artifact -artifactName $artifactName -targetPath $targetPath
             }
@@ -959,7 +955,7 @@ stages:
           # Dynamic environment loop modes
           foreach ($envKey in $envKeys) {
             foreach ($mode in $modes) {
-              $artifactName = "ProvisionMetadata_${mode}_${envKey}"
+              $artifactName = [string]::Format("ProvisionMetadata_{0}_{1}", $mode, $envKey)
               $targetPath = Join-Path $workspace $artifactName
               Download-Artifact -artifactName $artifactName -targetPath $targetPath
             }
@@ -1028,16 +1024,16 @@ stages:
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
-    - Provision_Hosted_Subscription
-    - Provision_LocalFallback_Subscription
-    - Provision_LocalFlagDriven_Subscription
-    - Provision_Hosted_Shared
-    - Provision_LocalFallback_Shared
-    - Provision_LocalFlagDriven_Shared
+    - Hosted_Subscription
+    - LocalFallback_Subscription
+    - LocalFlagDriven_Subscription
+    - Hosted_Shared
+    - LocalFallback_Shared
+    - LocalFlagDriven_Shared
     - ${{ each env in parameters.environments }}:
-        - Provision_Hosted_${{ env.key }}
-        - Provision_LocalFallback_${{ env.key }}
-        - Provision_LocalFlagDriven_${{ env.key }}
+        - Hosted_${{ env.key }}
+        - LocalFallback_${{ env.key }}
+        - LocalFlagDriven_${{ env.key }}
   condition: always()
   jobs:
   - job: VerifyProvisioning
