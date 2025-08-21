@@ -6,7 +6,7 @@ function Download-Artifact {
 
     $collectionUri = $env:SYSTEM_COLLECTIONURI       # e.g., https://dev.azure.com/myorg/
     $project = $env:SYSTEM_TEAMPROJECT               # e.g., MyProject
-    $pipelineId = $env:BUILD_DEFINITIONID            # Current pipeline ID
+    $pipelineId = $env:SYSTEM_DEFINITIONID           # Current pipeline ID
     $runId = $env:BUILD_BUILDID                      # Current run ID
     $accessToken = $env:SYSTEM_ACCESSTOKEN           # OAuth token provided by agent
 
@@ -14,8 +14,8 @@ function Download-Artifact {
         Authorization = "Bearer " + $accessToken
     }
 
-    $artifactListUri = [string]::Format("{0}{1}/_apis/build/builds/{2}/artifacts?api-version=7.1-preview.5",
-    $collectionUri, $project, $runId)
+    $artifactListUri = [string]::Format("{0}{1}/_apis/pipelines/{2}/runs/{3}/artifacts?api-version=7.1-preview.1", 
+        $collectionUri, $project, $pipelineId, $runId)
 
     try {
         Write-Host ([string]::Format("🔍 Querying artifact list from: {0}", $artifactListUri))
