@@ -5,7 +5,7 @@ param (
 
 Write-Host "🔍 Scanning for artifact-metadata.json files in: $MetadataRoot"
 
-Write-Host "🔍 Listing all files under $MetadataRoot:"
+Write-Host "🔍 Listing all files under $MetadataRoot"
 Get-ChildItem -Path $MetadataRoot -Recurse | ForEach-Object {
     Write-Host "📄 $($_.FullName)"
 }

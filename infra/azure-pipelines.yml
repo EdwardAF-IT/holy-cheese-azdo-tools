@@ -42,14 +42,14 @@ parameters:
         location: 'centralus'
         resourceGroup: 'AzdoTools-RG-Dev'
         environmentDisplayName: 'AzdoTools-Development'
-      test:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Test'
-        environmentDisplayName: 'AzdoTools-Test' 
-      prod:
-        location: 'centralus'
-        resourceGroup: 'AzdoTools-RG-Prod'
-        environmentDisplayName: 'AzdoTools-Production' 
+      # test:
+      #   location: 'centralus'
+      #   resourceGroup: 'AzdoTools-RG-Test'
+      #   environmentDisplayName: 'AzdoTools-Test' 
+      # prod:
+      #   location: 'centralus'
+      #   resourceGroup: 'AzdoTools-RG-Prod'
+      #   environmentDisplayName: 'AzdoTools-Production' 
 
   - name: provisionModes
     type: object
