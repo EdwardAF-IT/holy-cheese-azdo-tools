@@ -617,116 +617,116 @@ stages:
       steps:
       - script: echo "Visual header only"
 
-- stage: Hosted_${{ env.key }}
-  displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
-  condition: eq(variables.useHostedAgent, true)
-  dependsOn:
-    - Provision_${{ env.key }}_Header
-  jobs:
-  - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
-    environment: ${{ env.value.environmentDisplayName }}
-    pool:
-      name: ${{ parameters.hostedAgentName }}
-      vmImage: 'ubuntu-latest'
-    variables:
-      hostType: 0
-      envName: ${{ env.key }}
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - checkout: self
-
-          - task: Bash@3
-            displayName: 'Agent Info'
-            inputs:
-              targetType: 'inline'
-              script: |
-                echo "Using agent: $(Agent.Name)"
-
-          - task: AzureCLI@2
-            name: DeployEnvInfra
-            displayName: 'Deploy Environment Infrastructure (Hosted)'
-            inputs:
-              azureSubscription: 'HolyCheese-ServiceConnection'
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
-                envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
-                echo "🚀 Deploying ${{ env.key }} using template: $envFile"
-
-                az group update \
-                  --name ${{ env.value.resourceGroup }} \
-                  --set tags.Environment=${{ env.value.environmentDisplayName }} \
-                        tags.App='${{ parameters.appName }}'
-
-                az deployment group create \
-                  --name "$deploymentName" \
-                  --resource-group ${{ env.value.resourceGroup }} \
-                  --template-file "$envFile" \
-                  --parameters \
-                    appName='${{ parameters.appName }}' \
-                    environmentName='${{ env.key }}' \
-                    location='${{ env.value.location }}' \
-                    tags={} \
-                    subscriptionId='${{ parameters.subscriptionId }}'
-
-                # Extract outputs
-                deploymentOutput=$(az deployment group show \
-                  --resource-group "${{ env.value.resourceGroup }}" \
-                  --name "$deploymentName" \
-                  --query "properties.outputs" \
-                  --output json)
-
-                functionAppName=$(echo "$deploymentOutput" | jq -r '.functionAppName.value')
-                keyVaultName=$(echo "$deploymentOutput" | jq -r '.keyVaultName.value')
-                storageAccountName=$(echo "$deploymentOutput" | jq -r '.storageAccountName.value')
-
-                # Set pipeline variables
-                echo "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
-                echo "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
-                echo "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
-
-                exitCode=$?
-                echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
-
-          - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeployEnvInfra.EnvHostedExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PowerShell@2
-            displayName: 'Write Artifact Metadata'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                -Commit $(Build.SourceVersion)
-                -Version $(Build.BuildNumber)
-                -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                -FunctionAppName $(FunctionAppName)
-                -KeyVaultName $(KeyVaultName)
-                -StorageAccountName $(StorageAccountName)
-                -ResourceGroupName ${{ env.value.resourceGroup }}
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Metadata'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionMetadata_$(System.StageName)'
+  - stage: Hosted_${{ env.key }}
+    displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
+    condition: eq(variables.useHostedAgent, true)
+    dependsOn:
+      - Provision_${{ env.key }}_Header
+    jobs:
+    - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
+      environment: ${{ env.value.environmentDisplayName }}
+      pool:
+        name: ${{ parameters.hostedAgentName }}
+        vmImage: 'ubuntu-latest'
+      variables:
+        hostType: 0
+        envName: ${{ env.key }}
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - checkout: self
+  
+            - task: Bash@3
+              displayName: 'Agent Info'
+              inputs:
+                targetType: 'inline'
+                script: |
+                  echo "Using agent: $(Agent.Name)"
+  
+            - task: AzureCLI@2
+              name: DeployEnvInfra
+              displayName: 'Deploy Environment Infrastructure (Hosted)'
+              inputs:
+                azureSubscription: 'HolyCheese-ServiceConnection'
+                scriptType: bash
+                scriptLocation: inlineScript
+                inlineScript: |
+                  deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
+                  envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+                  echo "🚀 Deploying ${{ env.key }} using template: $envFile"
+  
+                  az group update \
+                    --name ${{ env.value.resourceGroup }} \
+                    --set tags.Environment=${{ env.value.environmentDisplayName }} \
+                          tags.App='${{ parameters.appName }}'
+  
+                  az deployment group create \
+                    --name "$deploymentName" \
+                    --resource-group ${{ env.value.resourceGroup }} \
+                    --template-file "$envFile" \
+                    --parameters \
+                      appName='${{ parameters.appName }}' \
+                      environmentName='${{ env.key }}' \
+                      location='${{ env.value.location }}' \
+                      tags={} \
+                      subscriptionId='${{ parameters.subscriptionId }}'
+  
+                  # Extract outputs
+                  deploymentOutput=$(az deployment group show \
+                    --resource-group "${{ env.value.resourceGroup }}" \
+                    --name "$deploymentName" \
+                    --query "properties.outputs" \
+                    --output json)
+  
+                  functionAppName=$(echo "$deploymentOutput" | jq -r '.functionAppName.value')
+                  keyVaultName=$(echo "$deploymentOutput" | jq -r '.keyVaultName.value')
+                  storageAccountName=$(echo "$deploymentOutput" | jq -r '.storageAccountName.value')
+  
+                  # Set pipeline variables
+                  echo "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+                  echo "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
+                  echo "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
+  
+                  exitCode=$?
+                  echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
+  
+            - task: PowerShell@2
+              displayName: 'Log Provision Result'
+              condition: always()
+              inputs:
+                targetType: 'filePath'
+                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+                arguments: >
+                  -EnvName $(envName)
+                  -HostType $(hostType)
+                  -Result $(DeployEnvInfra.EnvHostedExitCode)
+                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+  
+            - task: PowerShell@2
+              displayName: 'Write Artifact Metadata'
+              condition: always()
+              inputs:
+                targetType: 'filePath'
+                filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
+                arguments: >
+                  -EnvName $(envName)
+                  -HostType $(hostType)
+                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+                  -Commit $(Build.SourceVersion)
+                  -Version $(Build.BuildNumber)
+                  -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
+                  -FunctionAppName $(FunctionAppName)
+                  -KeyVaultName $(KeyVaultName)
+                  -StorageAccountName $(StorageAccountName)
+                  -ResourceGroupName ${{ env.value.resourceGroup }}
+  
+            - task: PublishPipelineArtifact@1
+              displayName: 'Publish Provision Metadata'
+              condition: always()
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: 'ProvisionMetadata_$(System.StageName)'
 
   - stage: LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent'
