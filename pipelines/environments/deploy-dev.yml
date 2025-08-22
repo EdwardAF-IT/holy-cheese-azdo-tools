@@ -16,13 +16,15 @@ variables:
   healthCheckUrl: 'https://azdotools-dev.azurewebsites.net/api/health'
   metadataArtifactName: 'ProvisionMetadata_Final'
   provisionArtifactName: 'ProvisionMetadata_Final'
-  manifestPath: '$(Pipeline.Workspace)/ProvisionMetadata_Final/manifest.json'
-  provisionResultPath: 'provision-results.json'
+  scriptPath: '$(Build.SourcesDirectory)/pipelines/scripts'
+  pipelineName: 'infraProducer'
+  manifestPath: '$(Pipeline.Workspace)/infraProducer/ProvisionMetadata_Final/manifest.json'
+  provisionResultPath: '$(Pipeline.Workspace)/infraProducer/ProvisionMetadata_Final/provision-results.json'
   artifactName: 'AzdoTools-dev'
 
 resources:
   pipelines:
-    - pipeline: infraProducer
+    - pipeline: ${{ variables.pipelineName }}
       source: azdo-tools-infrastructure
       trigger: none
 
@@ -55,13 +57,13 @@ stages:
           displayName: 'Read Artifact Metadata'
           inputs:
             targetType: 'filePath'
-            filePath: '$(Build.SourcesDirectory)/pipelines/scripts/Read-ArtifactMetadata.ps1'
+            filePath: '${{ variables.scriptPath }}/Read-ArtifactMetadata.ps1'
             arguments: >
-              -MetadataPath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/manifest.json"
+              -MetadataPath "${{ variables.manifestPath }}"
 
         - script: |
-            if [ ! -f "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}" ]; then
-              echo "##vso[task.logissue type=error]Provision result file not found at expected path: $(Pipeline.Workspace)/        ${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}"
+            if [ ! -f "${{ variables.provisionResultPath }}" ]; then
+              echo "##vso[task.logissue type=error]Provision result file not found at expected path: ${{ variables.provisionResultPath }}"
               exit 1
             fi
           displayName: 'Validate Provision Result File Exists'
@@ -71,9 +73,9 @@ stages:
           displayName: 'Validate Provisioning Result'
           inputs:
             targetType: 'filePath'
-            filePath: '$(Build.SourcesDirectory)/pipelines/scripts/Validate-ProvisionResult.ps1'
+            filePath: '${{ variables.scriptPath }}/Validate-ProvisionResult.ps1'
             arguments: >
-              -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}"
+              -ResultFilePath "${{ variables.provisionResultPath }}"
               -EnvName "${{ variables.envName }}"
 
 - stage: BuildAndTest
@@ -129,7 +131,7 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          $manifestPath = "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/manifest.json"
+          $manifestPath = "${{ variables.manifestPath }}"
           if (!(Test-Path $manifestPath)) {
             Write-Host "❌ Manifest not found at $manifestPath"
             exit 1
@@ -191,6 +193,6 @@ stages:
       displayName: 'Health Check'
       inputs:
         targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/pipelines/scripts/HealthCheck.ps1'
+        filePath: '${{ variables.scriptPath }}/HealthCheck.ps1'
         arguments: >
           -Url $(healthCheckUrl)
