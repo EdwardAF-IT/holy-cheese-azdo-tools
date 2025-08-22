@@ -138,30 +138,30 @@ stages:
           Write-Host "##vso[task.setvariable variable=ResourceGroupName]$resourceGroup"
           Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
 
-  - task: AzureCLI@2
-    displayName: 'Deploy Function App via Zip Deploy'
-    inputs:
-      azureSubscription: 'HolyCheese-ServiceConnection'
-      scriptType: ps
-      scriptLocation: inlineScript
-      inlineScript: |
-        $artifactPath = "$(Pipeline.Workspace)/${{ variables.artifactName }}/functionapp.zip"
-        $resourceGroup = "$(ResourceGroupName)"
-        $functionAppName = "$(FunctionAppName)"
-        $version = "$(Build.BuildNumber)"
-
-        if (!(Test-Path $artifactPath)) {
-          Write-Host "❌ Artifact not found at $artifactPath"
-          exit 1
-        }
-
-        Write-Host "📦 Deploying $functionAppName to $resourceGroup using ZIP package: $artifactPath"
-        az functionapp deployment source config-zip `
-          --resource-group $resourceGroup `
-          --name $functionAppName `
-          --src $artifactPath
-
-        Write-Host "✅ Deployment completed for version: $version"
+    - task: AzureCLI@2
+      displayName: 'Deploy Function App via Zip Deploy'
+      inputs:
+        azureSubscription: 'HolyCheese-ServiceConnection'
+        scriptType: ps
+        scriptLocation: inlineScript
+        inlineScript: |
+          $artifactPath = "$(Pipeline.Workspace)/${{ variables.artifactName }}/functionapp.zip"
+          $resourceGroup = "$(ResourceGroupName)"
+          $functionAppName = "$(FunctionAppName)"
+          $version = "$(Build.BuildNumber)"
+   
+          if (!(Test-Path $artifactPath)) {
+            Write-Host "❌ Artifact not found at $artifactPath"
+            exit 1
+          }
+   
+          Write-Host "📦 Deploying $functionAppName to $resourceGroup using ZIP package: $artifactPath"
+          az functionapp deployment source config-zip `
+            --resource-group $resourceGroup `
+            --name $functionAppName `
+            --src $artifactPath
+   
+          Write-Host "✅ Deployment completed for version: $version"
 
   - template: ../templates/manifest-write.yml
     parameters:
