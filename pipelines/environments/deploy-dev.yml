@@ -102,7 +102,13 @@ stages:
       inputs:
         command: 'test'
         projects: '**/*UnitTests.csproj'
-        arguments: '--configuration Release --no-build'
+        arguments: '--configuration Release'
+
+    - task: PublishTestResults@2
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFiles: '**/TestResults/*.trx'
+        testRunTitle: 'Unit Tests'
 
 - stage: Deploy
   displayName: 'Deploy to Dev Environment'
