@@ -10,6 +10,7 @@ parameters:
     default: 'Microsoft.Web/sites'
 
 variables:
+  envName: 'dev'   
   functionAppName: 'AzdoTools'
   notes: 'Deploying to the development environment'
   healthCheckUrl: 'https://azdotools-dev.azurewebsites.net/api/health'
@@ -163,15 +164,15 @@ stages:
    
           Write-Host "✅ Deployment completed for version: $version"
 
-  - template: ../templates/manifest-write.yml
-    parameters:
-      manifestPath: ${{ variables.manifestPath }}
-      artifactPath: $(Pipeline.Workspace)/${{ variables.artifactName }}/functionapp.zip
-      version: $(Build.BuildNumber)
-      notes: ${{ variables.notes }}
-      branch: $(Build.SourceBranchName)
-      commit: $(Build.SourceVersion)
-      environment: ${{ variables.envName }}
+    - template: ../templates/manifest-write.yml
+      parameters:
+        manifestPath: ${{ variables.manifestPath }}
+        artifactPath: $(Pipeline.Workspace)/${{ variables.artifactName }}/functionapp.zip
+        version: $(Build.BuildNumber)
+        notes: ${{ variables.notes }}
+        branch: $(Build.SourceBranchName)
+        commit: $(Build.SourceVersion)
+        environment: ${{ variables.envName }}
 
   - job: HealthCheck
     dependsOn: DeployFunctionApp
