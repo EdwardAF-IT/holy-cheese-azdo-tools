@@ -21,7 +21,6 @@ parameters:
     type: string
     default: '$(environment)'
 
-steps:
   - checkout: self
 
   - task: PowerShell@2
