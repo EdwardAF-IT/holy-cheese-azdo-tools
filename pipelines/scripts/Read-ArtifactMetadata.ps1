@@ -1,7 +1,6 @@
 param (
     [string] $MetadataPath
 )
-Write-Host "🔍 Received MetadataPath: $MetadataPath"
 
 if (-not (Test-Path $MetadataPath)) {
     Write-Error ([string]::Format("Metadata file not found: {0}", $MetadataPath))

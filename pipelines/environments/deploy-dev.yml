@@ -53,6 +53,8 @@ stages:
       pool:
         vmImage: 'ubuntu-latest'
       steps:
+        - download: infraProducer
+          artifact: ProvisionMetadata_Final
         - task: PowerShell@2
           displayName: 'Read Artifact Metadata'
           inputs:
