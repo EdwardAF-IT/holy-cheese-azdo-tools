@@ -1010,6 +1010,12 @@ stages:
             exit 1
           }
 
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Final Merged Manifest'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionMetadata_Final'
+        artifactName: 'ProvisionMetadata_Final'
+
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
