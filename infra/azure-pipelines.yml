@@ -355,42 +355,65 @@ stages:
       name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
     variables:
-      hostType: 0     # Hosted agent
+      hostType: 0   # Hosted agent
       envName: 'shared'
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: self
+
           - task: Bash@3
+            displayName: 'Agent Info'
             inputs:
               targetType: 'inline'
-              script: "echo \"Using agent: $(Agent.Name)\""
-            displayName: 'Agent Info'
+              script: |
+                echo "Using agent: $(Agent.Name)"
 
           - task: AzureCLI@2
             name: DeploySharedInfra
+            displayName: 'Deploy Shared Infrastructure (Hosted)'
             inputs:
               azureSubscription: 'HolyCheese-ServiceConnection'
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
+                deploymentName="${{ parameters.appName }}-shared-deploy"
+
                 az group update \
-                  --name ${{ variables.sharedResourceGroup }} \
+                  --name "${{ variables.sharedResourceGroup }}" \
                   --set tags.Environment='Shared' tags.App='${{ parameters.appName }}'
-                
+
                 az deployment group create \
-                  --resource-group ${{ variables.sharedResourceGroup }} \
+                  --name "$deploymentName" \
+                  --resource-group "${{ variables.sharedResourceGroup }}" \
                   --template-file infra/shared-infrastructure.bicep \
                   --parameters \
                     location='centralus' \
-                    resourceGroupName='${{ variables.sharedResourceGroup }}' \
+                    resourceGroupName="${{ variables.sharedResourceGroup }}" \
                     tags={} \
                     subscriptionId='${{ parameters.subscriptionId }}'
-                
+
+                # Extract outputs
+                deploymentOutput=$(az deployment group show \
+                  --resource-group "${{ variables.sharedResourceGroup }}" \
+                  --name "$deploymentName" \
+                  --query "properties.outputs" \
+                  --output json)
+
+                rgName=$(echo "$deploymentOutput" | jq -r '.rgName.value')
+                subId=$(echo "$deploymentOutput" | jq -r '.subId.value')
+
+                # Set pipeline variables
+                echo "##vso[task.setvariable variable=SharedResourceGroupName]$rgName"
+                echo "##vso[task.setvariable variable=SharedSubscriptionId]$subId"
+
+                # Static resource names
+                echo "##vso[task.setvariable variable=SharedInsightsName]AzdoTools-Shared-Insights"
+                echo "##vso[task.setvariable variable=SharedHostingPlanName]AzdoTools-AppServicePlan-Shared"
+
                 exitCode=$?
                 echo "##vso[task.setvariable variable=SharedHostedExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Shared Infrastructure (Hosted)'
 
           - script: |
               echo "Listing script files:"
@@ -408,7 +431,7 @@ stages:
                 -HostType $(hostType)
                 -Result $(DeploySharedInfra.SharedHostedExitCode)
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-          
+
           - task: PowerShell@2
             displayName: 'Write Artifact Metadata'
             condition: always()
@@ -422,7 +445,11 @@ stages:
                 -Commit $(Build.SourceVersion)
                 -Version $(Build.BuildNumber)
                 -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-          
+                -ResourceGroupName $(SharedResourceGroupName)
+                -SubscriptionId $(SharedSubscriptionId)
+                -SharedInsightsName $(SharedInsightsName)
+                -SharedHostingPlanName $(SharedHostingPlanName)
+
           - task: PublishPipelineArtifact@1
             displayName: 'Publish Provision Metadata'
             condition: always()
@@ -440,15 +467,17 @@ stages:
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
-      hostType: 1     # Local fallback
+      hostType: 1       # Local agent
       envName: 'shared'
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: self
+
           - task: AzureCLI@2
             name: DeploySharedFallbackInfra
+            displayName: 'Deploy Shared Infrastructure (Local Fallback)'
             inputs:
               azureSubscription: 'HolyCheese-ServiceConnection'
               scriptType: ps
@@ -457,34 +486,50 @@ stages:
                 Write-Host "Fallback triggered"
                 Write-Host "##vso[task.setvariable variable=sharedAgentFallback;isOutput=true]true"
 
-                # Construct parameters
+                $resourceGroup = '${{ variables.sharedResourceGroup }}'
+                $deploymentName = '${{ parameters.appName }}-shared-deploy'
+
                 $paramObj = @{
                   location = @{ value = 'centralus' }
-                  resourceGroupName = @{ value = '${{ variables.sharedResourceGroup }}' }
+                  resourceGroupName = @{ value = $resourceGroup }
                   tags = @{ value = @{} }
                   subscriptionId = @{ value = '${{ parameters.subscriptionId }}' }
                 }
 
-                # Write parameter file
                 $paramFilePath = Join-Path $env:TEMP "shared-fallback-params.json"
                 $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
 
                 Write-Host "Fallback parameter file contents:"
                 Get-Content $paramFilePath
 
-                # Deploy using parameter file
-                az group update \
-                  --name ${{ variables.sharedResourceGroup }} \
+                az group update `
+                  --name $resourceGroup `
                   --set tags.Environment='Shared' tags.App='${{ parameters.appName }}'
 
                 az deployment group create `
-                  --resource-group '${{ variables.sharedResourceGroup }}' `
+                  --name $deploymentName `
+                  --resource-group $resourceGroup `
                   --template-file 'infra/shared-infrastructure.bicep' `
                   --parameters @$paramFilePath
 
+                # Extract outputs
+                $deploymentOutput = az deployment group show `
+                  --resource-group $resourceGroup `
+                  --name $deploymentName `
+                  --query "properties.outputs" `
+                  --output json | ConvertFrom-Json
+
+                $rgName = $deploymentOutput.rgName.value
+                $subId = $deploymentOutput.subId.value
+
+                # Set pipeline variables
+                Write-Host "##vso[task.setvariable variable=SharedResourceGroupName]$rgName"
+                Write-Host "##vso[task.setvariable variable=SharedSubscriptionId]$subId"
+                Write-Host "##vso[task.setvariable variable=SharedInsightsName]AzdoTools-Shared-Insights"
+                Write-Host "##vso[task.setvariable variable=SharedHostingPlanName]AzdoTools-AppServicePlan-Shared"
+
                 $exitCode = $LASTEXITCODE
                 Write-Host "##vso[task.setvariable variable=SharedFallbackExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Shared Infrastructure (Local Fallback)'
 
           - task: PowerShell@2
             displayName: 'Log Provision Result'
@@ -497,7 +542,7 @@ stages:
                 -HostType $(hostType)
                 -Result $(DeploySharedFallbackInfra.SharedFallbackExitCode)
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-          
+
           - task: PowerShell@2
             displayName: 'Write Artifact Metadata'
             condition: always()
@@ -511,7 +556,11 @@ stages:
                 -Commit $(Build.SourceVersion)
                 -Version $(Build.BuildNumber)
                 -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-          
+                -ResourceGroupName $(SharedResourceGroupName)
+                -SubscriptionId $(SharedSubscriptionId)
+                -SharedInsightsName $(SharedInsightsName)
+                -SharedHostingPlanName $(SharedHostingPlanName)
+
           - task: PublishPipelineArtifact@1
             displayName: 'Publish Provision Metadata'
             condition: always()
@@ -529,15 +578,17 @@ stages:
     pool:
       name: ${{ parameters.localAgentName }}
     variables:
-      hostType: 2     # Local specified
+      hostType: 2
       envName: 'shared'
     strategy:
       runOnce:
         deploy:
           steps:
           - checkout: self
+
           - task: AzureCLI@2
             name: DeploySharedInfra
+            displayName: 'Deploy Shared Infrastructure (Refactored for Local Agent)'
             inputs:
               azureSubscription: 'HolyCheese-ServiceConnection'
               scriptType: ps
@@ -545,34 +596,50 @@ stages:
               inlineScript: |
                 Write-Host "Using agent: $env:AGENT_NAME"
 
-                # Build parameters object
+                $resourceGroup = '${{ variables.sharedResourceGroup }}'
+                $deploymentName = '${{ parameters.appName }}-shared-deploy'
+
                 $paramObj = @{
-                  location           = @{ value = 'centralus' }
-                  resourceGroupName  = @{ value = '${{ variables.sharedResourceGroup }}' }
-                  tags               = @{ value = @{} }
-                  subscriptionId     = @{ value = '${{ parameters.subscriptionId }}' }
+                  location = @{ value = 'centralus' }
+                  resourceGroupName = @{ value = $resourceGroup }
+                  tags = @{ value = @{} }
+                  subscriptionId = @{ value = '${{ parameters.subscriptionId }}' }
                 }
 
-                # Write parameter file
                 $paramFilePath = Join-Path $env:TEMP "shared-infra-params.json"
                 $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
 
                 Write-Host "Parameter file contents:"
                 Get-Content $paramFilePath
 
-                # Deploy with parameter file
-                az group update \
-                  --name ${{ variables.sharedResourceGroup }} \
+                az group update `
+                  --name $resourceGroup `
                   --set tags.Environment='Shared' tags.App='${{ parameters.appName }}'
 
                 az deployment group create `
-                  --resource-group '${{ variables.sharedResourceGroup }}' `
+                  --name $deploymentName `
+                  --resource-group $resourceGroup `
                   --template-file 'infra/shared-infrastructure.bicep' `
                   --parameters @$paramFilePath
 
+                # Extract outputs
+                $deploymentOutput = az deployment group show `
+                  --resource-group $resourceGroup `
+                  --name $deploymentName `
+                  --query "properties.outputs" `
+                  --output json | ConvertFrom-Json
+
+                $rgName = $deploymentOutput.rgName.value
+                $subId = $deploymentOutput.subId.value
+
+                # Set pipeline variables
+                Write-Host "##vso[task.setvariable variable=SharedResourceGroupName]$rgName"
+                Write-Host "##vso[task.setvariable variable=SharedSubscriptionId]$subId"
+                Write-Host "##vso[task.setvariable variable=SharedInsightsName]AzdoTools-Shared-Insights"
+                Write-Host "##vso[task.setvariable variable=SharedHostingPlanName]AzdoTools-AppServicePlan-Shared"
+
                 $exitCode = $LASTEXITCODE
                 Write-Host "##vso[task.setvariable variable=SharedLocalExitCode;isOutput=true]$exitCode"
-            displayName: 'Deploy Shared Infrastructure (Refactored for Local Agent)'
 
           - task: PowerShell@2
             displayName: 'Log Provision Result'
@@ -585,7 +652,7 @@ stages:
                 -HostType $(hostType)
                 -Result $(DeploySharedInfra.SharedLocalExitCode)
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-          
+
           - task: PowerShell@2
             displayName: 'Write Artifact Metadata'
             condition: always()
@@ -599,7 +666,11 @@ stages:
                 -Commit $(Build.SourceVersion)
                 -Version $(Build.BuildNumber)
                 -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-          
+                -ResourceGroupName $(SharedResourceGroupName)
+                -SubscriptionId $(SharedSubscriptionId)
+                -SharedInsightsName $(SharedInsightsName)
+                -SharedHostingPlanName $(SharedHostingPlanName)
+
           - task: PublishPipelineArtifact@1
             displayName: 'Publish Provision Metadata'
             condition: always()
@@ -739,56 +810,72 @@ stages:
       pool:
         name: ${{ parameters.localAgentName }}
       variables:
-        hostType: 1          # Local fallback
+        hostType: 1
         envName: ${{ env.key }}
       strategy:
         runOnce:
           deploy:
             steps:
             - checkout: self
+  
             - task: AzureCLI@2
               name: DeployEnvFallbackInfra
+              displayName: 'Deploy Environment Fallback (${ env.key })'
               inputs:
                 azureSubscription: 'HolyCheese-ServiceConnection'
                 scriptType: ps
                 scriptLocation: inlineScript
                 inlineScript: |
                   Write-Host "Using agent: $env:AGENT_NAME"
-  
-                  # Build template path
+ 
+                  $deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
                   $envKey = '${{ env.key }}'
                   $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
                   Write-Host "Deploying $envKey using template: $templateFile"
   
-                  # Construct parameters object
                   $paramObj = @{
                     appName         = @{ value = '${{ parameters.appName }}' }
-                    environmentName = @{ value = '${{ env.key }}' }
+                    environmentName = @{ value = $envKey }
                     location        = @{ value = '${{ env.value.location }}' }
                     tags            = @{ value = @{} }
                     subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
                   }
   
-                  # Write parameter file
                   $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
                   $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
   
                   Write-Host "Parameter file contents:"
                   Get-Content $paramFilePath
   
-                  # Deploy with parameter file
                   az group update `
-                    --name ${{ env.value.resourceGroup }} `
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} tags.App='${{ parameters.appName }}'
+                    --name '${{ env.value.resourceGroup }}' `
+                    --set tags.Environment='${{ env.value.environmentDisplayName }}' tags.App='${{ parameters.appName }}'
   
+                  $deploymentName = "${{ parameters.appName }}-$envKey-deploy"
                   az deployment group create `
+                    --name $deploymentName `
                     --resource-group '${{ env.value.resourceGroup }}' `
                     --template-file $templateFile `
                     --parameters @$paramFilePath
   
+                  # Extract outputs
+                  $deploymentOutput = az deployment group show `
+                    --resource-group '${{ env.value.resourceGroup }}' `
+                    --name $deploymentName `
+                    --query "properties.outputs" `
+                    --output json | ConvertFrom-Json
+  
+                  $functionAppName = $deploymentOutput.functionAppName.value
+                  $keyVaultName = $deploymentOutput.keyVaultName.value
+                  $storageAccountName = $deploymentOutput.storageAccountName.value
+  
+                  # Set pipeline variables
+                  Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+                  Write-Host "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
+                  Write-Host "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
+  
                   $exitCode = $LASTEXITCODE
                   Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
-              displayName: 'Deploy Environment Fallback (${ env.key })'
   
             - task: PowerShell@2
               displayName: 'Log Provision Result'
@@ -801,7 +888,7 @@ stages:
                   -HostType $(hostType)
                   -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
                   -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-            
+  
             - task: PowerShell@2
               displayName: 'Write Artifact Metadata'
               condition: always()
@@ -815,7 +902,11 @@ stages:
                   -Commit $(Build.SourceVersion)
                   -Version $(Build.BuildNumber)
                   -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-            
+                  -FunctionAppName $(FunctionAppName)
+                  -KeyVaultName $(KeyVaultName)
+                  -StorageAccountName $(StorageAccountName)
+                  -ResourceGroupName ${{ env.value.resourceGroup }}
+  
             - task: PublishPipelineArtifact@1
               displayName: 'Publish Provision Metadata'
               condition: always()
@@ -834,28 +925,29 @@ stages:
       pool:
         name: ${{ parameters.localAgentName }}
       variables:
-        hostType: 2          # Local specified
+        hostType: 2
         envName: ${{ env.key }}
       strategy:
         runOnce:
           deploy:
             steps:
             - checkout: self
+  
             - task: AzureCLI@2
               name: DeployEnvDirectInfra
+              displayName: 'Deploy Environment Direct (${ env.key })'
               inputs:
                 azureSubscription: 'HolyCheese-ServiceConnection'
                 scriptType: ps
                 scriptLocation: inlineScript
                 inlineScript: |
                   Write-Host "Using agent: $env:AGENT_NAME"
-  
-                  # Build template file path
+
+                  $deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
                   $envKey = '${{ env.key }}'
                   $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
                   Write-Host "Deploying $envKey using template: $templateFile"
   
-                  # Construct parameter object
                   $paramObj = @{
                     appName         = @{ value = '${{ parameters.appName }}' }
                     environmentName = @{ value = $envKey }
@@ -864,26 +956,41 @@ stages:
                     subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
                   }
   
-                  # Write parameters file
                   $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
                   $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
   
                   Write-Host "Parameter file contents:"
                   Get-Content $paramFilePath
   
-                  # Run deployment
                   az group update `
-                    --name ${{ env.value.resourceGroup }} `
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} tags.App='${{ parameters.appName }}'
+                    --name '${{ env.value.resourceGroup }}' `
+                    --set tags.Environment='${{ env.value.environmentDisplayName }}' tags.App='${{ parameters.appName }}'
   
+                  $deploymentName = "${{ parameters.appName }}-$envKey-deploy"
                   az deployment group create `
+                    --name $deploymentName `
                     --resource-group '${{ env.value.resourceGroup }}' `
                     --template-file $templateFile `
                     --parameters @$paramFilePath
   
+                  # Extract outputs
+                  $deploymentOutput = az deployment group show `
+                    --resource-group '${{ env.value.resourceGroup }}' `
+                    --name $deploymentName `
+                    --query "properties.outputs" `
+                    --output json | ConvertFrom-Json
+  
+                  $functionAppName = $deploymentOutput.functionAppName.value
+                  $keyVaultName = $deploymentOutput.keyVaultName.value
+                  $storageAccountName = $deploymentOutput.storageAccountName.value
+  
+                  # Set pipeline variables
+                  Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+                  Write-Host "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
+                  Write-Host "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
+  
                   $exitCode = $LASTEXITCODE
                   Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
-              displayName: 'Deploy Environment Direct (${ env.key })'
   
             - task: PowerShell@2
               displayName: 'Log Provision Result'
@@ -896,7 +1003,7 @@ stages:
                   -HostType $(hostType)
                   -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
                   -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-            
+  
             - task: PowerShell@2
               displayName: 'Write Artifact Metadata'
               condition: always()
@@ -910,7 +1017,11 @@ stages:
                   -Commit $(Build.SourceVersion)
                   -Version $(Build.BuildNumber)
                   -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-            
+                  -FunctionAppName $(FunctionAppName)
+                  -KeyVaultName $(KeyVaultName)
+                  -StorageAccountName $(StorageAccountName)
+                  -ResourceGroupName ${{ env.value.resourceGroup }}
+  
             - task: PublishPipelineArtifact@1
               displayName: 'Publish Provision Metadata'
               condition: always()
