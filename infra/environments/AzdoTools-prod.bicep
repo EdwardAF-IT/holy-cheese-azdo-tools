@@ -26,6 +26,8 @@ module kv '../modules/keyVault.bicep' = {
   }
 }
 
+output keyVaultName string = kv.outputs.kvName
+
 // Storage Account
 module storage '../modules/storage.bicep' = {
   name: '${prefix}storage'
@@ -35,6 +37,8 @@ module storage '../modules/storage.bicep' = {
     tags: tagsAll
   }
 }
+
+output storageAccountName string = storage.outputs.storageName
 
 // Function App
 module fnapp '../modules/functionApp.bicep' = {
@@ -51,3 +55,5 @@ module fnapp '../modules/functionApp.bicep' = {
     tags: tagsAll
   }
 }
+
+output functionAppName string = fnapp.outputs.functionAppName
