@@ -109,34 +109,34 @@ stages:
         version: 'dev-$(Build.BuildId)'
         notes: ${{ variables.notes }}
 
-- job: DeployFunctionApp
-  dependsOn: ReadManifest
-  pool:
-    vmImage: 'ubuntu-latest'
-  steps:
-  - checkout: self
-
-  - task: PowerShell@2
-    displayName: 'Extract Deployment Metadata from Manifest'
-    inputs:
-      targetType: 'inline'
-      script: |
-        $manifestPath = "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/manifest.json"
-        if (!(Test-Path $manifestPath)) {
-          Write-Host "❌ Manifest not found at $manifestPath"
-          exit 1
-        }
-
-        $manifest = Get-Content $manifestPath | ConvertFrom-Json
-        $resourceGroup = $manifest.ResourceGroupName
-        $functionAppName = $manifest.FunctionAppName
-
-        Write-Host "✅ Extracted Resource Group: $resourceGroup"
-        Write-Host "✅ Extracted Function App Name: $functionAppName"
-
-        # Set pipeline variables
-        Write-Host "##vso[task.setvariable variable=ResourceGroupName]$resourceGroup"
-        Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+  - job: DeployFunctionApp
+    dependsOn: ReadManifest
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+  
+    - task: PowerShell@2
+      displayName: 'Extract Deployment Metadata from Manifest'
+      inputs:
+        targetType: 'inline'
+        script: |
+          $manifestPath = "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/manifest.json"
+          if (!(Test-Path $manifestPath)) {
+            Write-Host "❌ Manifest not found at $manifestPath"
+            exit 1
+          }
+  
+          $manifest = Get-Content $manifestPath | ConvertFrom-Json
+          $resourceGroup = $manifest.ResourceGroupName
+          $functionAppName = $manifest.FunctionAppName
+  
+          Write-Host "✅ Extracted Resource Group: $resourceGroup"
+          Write-Host "✅ Extracted Function App Name: $functionAppName"
+  
+          # Set pipeline variables
+          Write-Host "##vso[task.setvariable variable=ResourceGroupName]$resourceGroup"
+          Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
 
   - task: AzureCLI@2
     displayName: 'Deploy Function App via Zip Deploy'
