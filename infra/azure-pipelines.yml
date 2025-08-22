@@ -1029,6 +1029,7 @@ stages:
         - Hosted_${{ env.key }}
         - LocalFallback_${{ env.key }}
         - LocalFlagDriven_${{ env.key }}
+-   - MergeProvisionMetadata
   condition: always()
   jobs:
   - job: VerifyProvisioning
