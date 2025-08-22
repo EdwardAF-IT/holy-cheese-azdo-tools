@@ -39,9 +39,9 @@ stages:
           artifact: ProvisionMetadata_Final
 
         - script: |
-            echo "🔍 Listing contents of $(Pipeline.Workspace)/ProvisionMetadata_Final:"
-            ls -la $(Pipeline.Workspace)/ProvisionMetadata_Final
-          displayName: 'Debug: List ProvisionMetadata_Final Contents'
+            echo "🔍 Listing all downloaded artifacts:"
+            ls -la $(Pipeline.Workspace)
+          displayName: 'Debug: List Pipeline Workspace'
 
 - stage: ValidateInfra
   displayName: 'Validate Dev Environment Provisioning'
