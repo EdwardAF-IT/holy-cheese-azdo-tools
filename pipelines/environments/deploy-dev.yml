@@ -109,31 +109,69 @@ stages:
         version: 'dev-$(Build.BuildId)'
         notes: ${{ variables.notes }}
 
-  - job: DeployFunctionApp
-    dependsOn: ReadManifest
-    pool:
-      vmImage: 'ubuntu-latest'
-    steps:
-    - checkout: self
+- job: DeployFunctionApp
+  dependsOn: ReadManifest
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - checkout: self
 
-    - task: PowerShell@2
-      displayName: 'Deploy Function App'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $path = "$(artifactPath)"
-          Write-Host ("Deploying version {0} to dev using artifact: {1}" -f "$(version)", $path)
-          # Insert actual deployment logic here
+  - task: PowerShell@2
+    displayName: 'Extract Deployment Metadata from Manifest'
+    inputs:
+      targetType: 'inline'
+      script: |
+        $manifestPath = "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/manifest.json"
+        if (!(Test-Path $manifestPath)) {
+          Write-Host "❌ Manifest not found at $manifestPath"
+          exit 1
+        }
 
-    - template: ../templates/manifest-write.yml
-      parameters:
-        manifestPath: ${{ variables.manifestPath }}
-        artifactPath: $(artifactPath)
-        version: $(version)
-        notes: $(notes)
-        branch: $(branch)
-        commit: $(commit)
-        environment: $(environment)
+        $manifest = Get-Content $manifestPath | ConvertFrom-Json
+        $resourceGroup = $manifest.ResourceGroupName
+        $functionAppName = $manifest.FunctionAppName
+
+        Write-Host "✅ Extracted Resource Group: $resourceGroup"
+        Write-Host "✅ Extracted Function App Name: $functionAppName"
+
+        # Set pipeline variables
+        Write-Host "##vso[task.setvariable variable=ResourceGroupName]$resourceGroup"
+        Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+
+  - task: AzureCLI@2
+    displayName: 'Deploy Function App via Zip Deploy'
+    inputs:
+      azureSubscription: 'HolyCheese-ServiceConnection'
+      scriptType: ps
+      scriptLocation: inlineScript
+      inlineScript: |
+        $artifactPath = "$(Pipeline.Workspace)/${{ variables.artifactName }}/functionapp.zip"
+        $resourceGroup = "$(ResourceGroupName)"
+        $functionAppName = "$(FunctionAppName)"
+        $version = "$(Build.BuildNumber)"
+
+        if (!(Test-Path $artifactPath)) {
+          Write-Host "❌ Artifact not found at $artifactPath"
+          exit 1
+        }
+
+        Write-Host "📦 Deploying $functionAppName to $resourceGroup using ZIP package: $artifactPath"
+        az functionapp deployment source config-zip `
+          --resource-group $resourceGroup `
+          --name $functionAppName `
+          --src $artifactPath
+
+        Write-Host "✅ Deployment completed for version: $version"
+
+  - template: ../templates/manifest-write.yml
+    parameters:
+      manifestPath: ${{ variables.manifestPath }}
+      artifactPath: $(Pipeline.Workspace)/${{ variables.artifactName }}/functionapp.zip
+      version: $(Build.BuildNumber)
+      notes: ${{ variables.notes }}
+      branch: $(Build.SourceBranchName)
+      commit: $(Build.SourceVersion)
+      environment: ${{ variables.envName }}
 
   - job: HealthCheck
     dependsOn: DeployFunctionApp
