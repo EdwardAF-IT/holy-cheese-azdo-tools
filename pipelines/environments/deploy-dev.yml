@@ -32,9 +32,16 @@ stages:
   jobs:
     - job: FetchInfra
       displayName: 'Fetch ProvisionMetadata_Final'
+      pool:
+        vmImage: 'ubuntu-latest'
       steps:
         - download: infraProducer
           artifact: ProvisionMetadata_Final
+
+        - script: |
+            echo "🔍 Listing contents of $(Pipeline.Workspace)/ProvisionMetadata_Final:"
+            ls -la $(Pipeline.Workspace)/ProvisionMetadata_Final
+          displayName: 'Debug: List ProvisionMetadata_Final Contents'
 
 - stage: ValidateInfra
   displayName: 'Validate Dev Environment Provisioning'
@@ -67,7 +74,7 @@ stages:
             filePath: '$(Build.SourcesDirectory)/pipelines/scripts/Validate-ProvisionResult.ps1'
             arguments: >
               -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}"
-              -EnvName "dev"
+              -EnvName "${{ variables.envName }}"
 
 - stage: BuildAndTest
   displayName: 'Build and Run Unit Tests'
