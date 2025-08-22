@@ -24,7 +24,7 @@ variables:
 
 resources:
   pipelines:
-    - pipeline: ${{ variables.pipelineName }}
+    - pipeline: '${{ variables.pipelineName }}'
       source: azdo-tools-infrastructure
       trigger: none
 
