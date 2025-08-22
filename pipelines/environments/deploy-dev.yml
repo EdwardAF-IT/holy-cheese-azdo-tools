@@ -42,7 +42,7 @@ stages:
 
         - script: |
             echo "🔍 Listing all downloaded artifacts:"
-            ls -Rla $(Pipeline.Workspace)
+            ls -Ra $(Pipeline.Workspace)
           displayName: 'Debug: List Pipeline Workspace'
 
 - stage: ValidateInfra
