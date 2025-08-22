@@ -11,16 +11,17 @@ parameters:
 
 variables:
   functionAppName: 'AzdoTools'
-  notes: 'Deploying to dev for internal validation'
+  notes: 'Deploying to the development environment'
   healthCheckUrl: 'https://azdotools-dev.azurewebsites.net/api/health'
-  metadataArtifactName: 'Metadata'
-  provisionArtifactName: 'ProvisionResult_Final'
-  manifestPath: '$(Pipeline.Workspace)/InfraManifest/manifest.json'
-  artifactName: 'functionapp'
+  metadataArtifactName: 'ProvisionMetadata_Final'
+  provisionArtifactName: 'ProvisionMetadata_Final'
+  manifestPath: '$(Pipeline.Workspace)/ProvisionMetadata_Final/manifest.json'
+  provisionResultPath: 'provision-results.json'
+  artifactName: 'AzdoTools-dev'
 
 resources:
   pipelines:
-    - pipeline: infraProvision
+    - pipeline: infraProducer
       source: azdo-tools-infrastructure
       trigger: none
 
@@ -29,13 +30,10 @@ stages:
   displayName: 'Download Infra Artifacts'
   jobs:
     - job: FetchInfra
-      displayName: 'Fetch InfraManifest and ProvisionResult_Final'
+      displayName: 'Fetch ProvisionMetadata_Final'
       steps:
         - download: infraProducer
-          artifact: InfraManifest
-
-        - download: infraProducer
-          artifact: ProvisionResult_Final
+          artifact: ProvisionMetadata_Final
 
 - stage: ValidateInfra
   displayName: 'Validate Dev Environment Provisioning'
@@ -51,11 +49,11 @@ stages:
             targetType: 'filePath'
             filePath: '$(Build.SourcesDirectory)/scripts/Read-ArtifactMetadata.ps1'
             arguments: >
-              -MetadataPath "$(Pipeline.Workspace)/${{ variables.metadataArtifactName }}/artifact-metadata.json"
+              -MetadataPath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/manifest.json"
 
         - script: |
-            if [ ! -f "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)" ]; then
-              echo "##vso[task.logissue type=error]Provision result file not found at expected path: $(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
+            if [ ! -f "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}" ]; then
+              echo "##vso[task.logissue type=error]Provision result file not found at expected path: $(Pipeline.Workspace)/        ${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}"
               exit 1
             fi
           displayName: 'Validate Provision Result File Exists'
@@ -67,7 +65,7 @@ stages:
             targetType: 'filePath'
             filePath: '$(Build.SourcesDirectory)/scripts/Validate-ProvisionResult.ps1'
             arguments: >
-              -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/$(provisionResultPath)"
+              -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}"
               -EnvName "dev"
 
 - stage: BuildAndTest

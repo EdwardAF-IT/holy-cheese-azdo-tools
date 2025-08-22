@@ -1,7 +1,7 @@
 parameters:
   - name: manifestPath
     type: string
-    default: '$(Pipeline.Workspace)/manifest/manifest.json'
+    default: '$(Pipeline.Workspace)/ProvisionMetadata_Final/manifest.json'
   - name: version
     type: string
     default: 'v0'
@@ -10,7 +10,7 @@ parameters:
     default: 'Auto-generated manifest'
   - name: artifactName
     type: string
-    default: 'functionapp'
+    default: 'AzdoTools'
 
 steps:
   - checkout: self
