@@ -48,7 +48,7 @@ stages:
           displayName: 'Read Artifact Metadata'
           inputs:
             targetType: 'filePath'
-            filePath: '$(Build.SourcesDirectory)/scripts/Read-ArtifactMetadata.ps1'
+            filePath: '$(Build.SourcesDirectory)/pipelines/scripts/Read-ArtifactMetadata.ps1'
             arguments: >
               -MetadataPath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/manifest.json"
 
@@ -64,7 +64,7 @@ stages:
           displayName: 'Validate Provisioning Result'
           inputs:
             targetType: 'filePath'
-            filePath: '$(Build.SourcesDirectory)/scripts/Validate-ProvisionResult.ps1'
+            filePath: '$(Build.SourcesDirectory)/pipelines/scripts/Validate-ProvisionResult.ps1'
             arguments: >
               -ResultFilePath "$(Pipeline.Workspace)/${{ variables.provisionArtifactName }}/${{ variables.provisionResultPath }}"
               -EnvName "dev"
@@ -184,6 +184,6 @@ stages:
       displayName: 'Health Check'
       inputs:
         targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/scripts/HealthCheck.ps1'
+        filePath: '$(Build.SourcesDirectory)/pipelines/scripts/HealthCheck.ps1'
         arguments: >
           -Url $(healthCheckUrl)
