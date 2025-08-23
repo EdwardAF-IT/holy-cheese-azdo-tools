@@ -41,6 +41,14 @@ $entry = @{
     timestamp = (Get-Date).ToString("o")
 }
 
+# Load existing manifest if it exists
+if (Test-Path $ManifestPath) {
+    $existing = Get-Content $ManifestPath | ConvertFrom-Json
+    $existing = @{} + $existing  # Cast to hashtable
+} else {
+    $existing = @{}
+}
+
 # Update the manifest under the environment key
 $existing[$Environment] = $entry
 
