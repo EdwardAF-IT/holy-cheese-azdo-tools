@@ -166,6 +166,12 @@ stages:
           echo "##vso[task.setvariable variable=subscriptionAgentFallback;isOutput=true]true"
       displayName: 'Mark Fallback Active'
 
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download Latest Manifest'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: '${{ variables.finalArtifactName }}'
+
     - task: AzureCLI@2
       name: DeployInfra
       displayName: 'Deploy Subscription Baseline (Fallback)'
@@ -240,6 +246,11 @@ stages:
       envName: 'sub'  # Subscription-level
       manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     steps:
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Download Latest Manifest'
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: '${{ variables.finalArtifactName }}'
     - task: AzureCLI@2
       name: DeployInfra
       displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
@@ -339,6 +350,12 @@ stages:
               script: |
                 echo "Using agent: $(Agent.Name)"
 
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Latest Manifest'
+            inputs:
+              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+              artifactName: '${{ variables.finalArtifactName }}'
+
           - task: AzureCLI@2
             name: DeploySharedInfra
             displayName: 'Deploy Shared Infrastructure (Hosted)'
@@ -434,6 +451,12 @@ stages:
         deploy:
           steps:
           - checkout: self
+  
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Latest Manifest'
+            inputs:
+              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+              artifactName: '${{ variables.finalArtifactName }}'
 
           - task: AzureCLI@2
             name: DeploySharedFallbackInfra
@@ -492,18 +515,6 @@ stages:
                 Write-Host "##vso[task.setvariable variable=SharedFallbackExitCode;isOutput=true]$exitCode"
 
           - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeploySharedFallbackInfra.SharedFallbackExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PowerShell@2
             displayName: 'Write Manifest Record'
             condition: always()
             inputs:
@@ -516,7 +527,7 @@ stages:
                 -Commit "$(Build.SourceVersion)"
                 -Notes "Provisioned shared resources (hosted)"
                 -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
-                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -Result $(DeploySharedFallbackInfra.SharedFallbackExitCode)
                 -HostType "$(hostType)"
                 -ResourceGroupName "$(SharedResourceGroupName)"
                 -SubscriptionId "$(SharedSubscriptionId)"
@@ -548,6 +559,12 @@ stages:
         deploy:
           steps:
           - checkout: self
+  
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Latest Manifest'
+            inputs:
+              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+              artifactName: '${{ variables.finalArtifactName }}'
 
           - task: AzureCLI@2
             name: DeploySharedInfra
@@ -605,18 +622,6 @@ stages:
                 Write-Host "##vso[task.setvariable variable=SharedLocalExitCode;isOutput=true]$exitCode"
 
           - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeploySharedInfra.SharedLocalExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PowerShell@2
             displayName: 'Write Manifest Record'
             condition: always()
             inputs:
@@ -629,7 +634,7 @@ stages:
                 -Commit "$(Build.SourceVersion)"
                 -Notes "Provisioned shared resources (hosted)"
                 -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
-                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -Result $(DeploySharedInfra.SharedLocalExitCode)
                 -HostType "$(hostType)"
                 -ResourceGroupName "$(SharedResourceGroupName)"
                 -SubscriptionId "$(SharedSubscriptionId)"
@@ -680,7 +685,13 @@ stages:
                 targetType: 'inline'
                 script: |
                   echo "Using agent: $(Agent.Name)"
-  
+
+            - task: DownloadPipelineArtifact@2
+              displayName: 'Download Latest Manifest'
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: '${{ variables.finalArtifactName }}'
+ 
             - task: AzureCLI@2
               name: DeployEnvInfra
               displayName: 'Deploy Environment Infrastructure (Hosted)'
@@ -729,18 +740,6 @@ stages:
                   echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
   
             - task: PowerShell@2
-              displayName: 'Log Provision Result'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -Result $(DeployEnvInfra.EnvHostedExitCode)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-  
-            - task: PowerShell@2
               displayName: 'Write Manifest Record'
               condition: always()
               inputs:
@@ -753,12 +752,10 @@ stages:
                   -Commit "$(Build.SourceVersion)"
                   -Notes "Provisioned shared resources (hosted)"
                   -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
-                  -Result $(DeploySharedInfra.SharedHostedExitCode)
+                  -Result $(DeployEnvInfra.EnvHostedExitCode)
                   -HostType "$(hostType)"
                   -ResourceGroupName "$(SharedResourceGroupName)"
                   -SubscriptionId "$(SharedSubscriptionId)"
-                  -SharedInsightsName "$(SharedInsightsName)"
-                  -SharedHostingPlanName "$(SharedHostingPlanName)"
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
@@ -790,6 +787,12 @@ stages:
             steps:
             - checkout: self
   
+            - task: DownloadPipelineArtifact@2
+              displayName: 'Download Latest Manifest'
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: '${{ variables.finalArtifactName }}'
+ 
             - task: AzureCLI@2
               name: DeployEnvFallbackInfra
               displayName: 'Deploy Environment Fallback (${ env.key })'
@@ -850,18 +853,6 @@ stages:
                   Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
   
             - task: PowerShell@2
-              displayName: 'Log Provision Result'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-  
-            - task: PowerShell@2
               displayName: 'Write Manifest Record'
               condition: always()
               inputs:
@@ -874,12 +865,10 @@ stages:
                   -Commit "$(Build.SourceVersion)"
                   -Notes "Provisioned shared resources (hosted)"
                   -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
-                  -Result $(DeploySharedInfra.SharedHostedExitCode)
+                  -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
                   -HostType "$(hostType)"
                   -ResourceGroupName "$(SharedResourceGroupName)"
                   -SubscriptionId "$(SharedSubscriptionId)"
-                  -SharedInsightsName "$(SharedInsightsName)"
-                  -SharedHostingPlanName "$(SharedHostingPlanName)"
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
@@ -910,7 +899,12 @@ stages:
           deploy:
             steps:
             - checkout: self
-  
+            - task: DownloadPipelineArtifact@2
+              displayName: 'Download Latest Manifest'
+              inputs:
+                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+                artifactName: '${{ variables.finalArtifactName }}'
+
             - task: AzureCLI@2
               name: DeployEnvDirectInfra
               displayName: 'Deploy Environment Direct (${ env.key })'
@@ -971,18 +965,6 @@ stages:
                   Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
   
             - task: PowerShell@2
-              displayName: 'Log Provision Result'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-  
-            - task: PowerShell@2
               displayName: 'Write Manifest Record'
               condition: always()
               inputs:
@@ -995,12 +977,10 @@ stages:
                   -Commit "$(Build.SourceVersion)"
                   -Notes "Provisioned shared resources (hosted)"
                   -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
-                  -Result $(DeploySharedInfra.SharedHostedExitCode)
+                  -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
                   -HostType "$(hostType)"
                   -ResourceGroupName "$(SharedResourceGroupName)"
                   -SubscriptionId "$(SharedSubscriptionId)"
-                  -SharedInsightsName "$(SharedInsightsName)"
-                  -SharedHostingPlanName "$(SharedHostingPlanName)"
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
