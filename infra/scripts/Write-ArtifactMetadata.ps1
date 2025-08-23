@@ -44,6 +44,9 @@ $entry = @{
 # Update the manifest under the environment key
 $existing[$Environment] = $entry
 
+# Ensure target directory exists
+New-Item -ItemType Directory -Path (Split-Path $ManifestPath) -Force | Out-Null
+
 # Write updated manifest
 $updatedJson = $existing | ConvertTo-Json -Depth 5
 $updatedJson | Out-File -FilePath $ManifestPath -Encoding UTF8

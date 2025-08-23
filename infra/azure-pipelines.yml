@@ -93,6 +93,7 @@ stages:
     variables:
       hostType: 0     # Hosted agent
       envName: 'sub'  # Subscription-level resource
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     steps:
     - task: Bash@3
       inputs:
@@ -155,6 +156,7 @@ stages:
     variables:
       hostType: 1     # Local fallback
       envName: 'sub'  # Subscription-level
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     steps:
     - task: Bash@3
       inputs:
@@ -236,6 +238,7 @@ stages:
     variables:
       hostType: 2     # Local specified
       envName: 'sub'  # Subscription-level
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     steps:
     - task: AzureCLI@2
       name: DeployInfra
