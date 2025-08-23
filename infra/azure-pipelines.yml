@@ -137,13 +137,6 @@ stages:
           -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
           -Result $(DeployInfra.SubHostedExitCode)
           -HostType "$(hostType)"
-    
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Provision Manifest'
-      condition: always()
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: LocalFallback_Subscription
   displayName: 'Fallback: Subscription-Level Resources (Local Agent)'
@@ -165,12 +158,6 @@ stages:
           echo "Fallback triggered — using local agent"
           echo "##vso[task.setvariable variable=subscriptionAgentFallback;isOutput=true]true"
       displayName: 'Mark Fallback Active'
-
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download Latest Manifest'
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: '${{ variables.finalArtifactName }}'
 
     - task: AzureCLI@2
       name: DeployInfra
@@ -226,13 +213,6 @@ stages:
           -Result $(DeployInfra.DeployInfraExitCode)
           -HostType "$(hostType)"
     
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Provision Manifest'
-      condition: always()
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: '${{ variables.finalArtifactName }}'
-
 - stage: LocalFlagDriven_Subscription
   displayName: 'Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
@@ -246,11 +226,6 @@ stages:
       envName: 'sub'  # Subscription-level
       manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     steps:
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download Latest Manifest'
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: '${{ variables.finalArtifactName }}'
     - task: AzureCLI@2
       name: DeployInfra
       displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
@@ -306,13 +281,6 @@ stages:
           -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
           -Result $(DeployInfra.SubFlagExitCode)
           -HostType "$(hostType)"
-    
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Provision Manifest'
-      condition: always()
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: '${{ variables.finalArtifactName }}'
         
 - stage: Provision_Shared_Header
   displayName: 'Shared Resources'
@@ -426,13 +394,6 @@ stages:
                 -SharedInsightsName "$(SharedInsightsName)"
                 -SharedHostingPlanName "$(SharedHostingPlanName)"
 
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Manifest'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: '${{ variables.finalArtifactName }}'
-
 - stage: LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Fallback: Provision Shared Resources with Local Agent'
@@ -534,13 +495,6 @@ stages:
                 -SharedInsightsName "$(SharedInsightsName)"
                 -SharedHostingPlanName "$(SharedHostingPlanName)"
 
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Manifest'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: '${{ variables.finalArtifactName }}'
-
 - stage: LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Local Specified: Provision Shared Resources (Local Agent)'
@@ -640,13 +594,6 @@ stages:
                 -SubscriptionId "$(SharedSubscriptionId)"
                 -SharedInsightsName "$(SharedInsightsName)"
                 -SharedHostingPlanName "$(SharedHostingPlanName)"
-
-          - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Manifest'
-            condition: always()
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: '${{ variables.finalArtifactName }}'
 
 - ${{ each env in parameters.environments }}:
   - stage: Provision_${{ env.key }}_Header
@@ -760,13 +707,6 @@ stages:
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
   
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Provision Manifest'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: '${{ variables.finalArtifactName }}'
-  
   - stage: LocalFallback_${{ env.key }}
     displayName: 'Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
@@ -872,13 +812,6 @@ stages:
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
-  
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Provision Manifest'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: '${{ variables.finalArtifactName }}'
           
   - stage: LocalFlagDriven_${{ env.key }}
     displayName: 'Local Specified: Deploy to ${{ env.key }} (Local Agent)'
@@ -984,13 +917,6 @@ stages:
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
-  
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Provision Manifest'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
@@ -1016,6 +942,13 @@ stages:
       inputs:
         artifact: ${{ variables.finalArtifactName }}
         path: $(Pipeline.Workspace)/${{ variables.finalArtifactName }}
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publish Provision Manifest'
+      condition: always()
+      inputs:
+        targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+        artifactName: '${{ variables.finalArtifactName }}'
 
     - task: PowerShell@2
       displayName: 'Evaluate Provision Matrix from Manifest'
