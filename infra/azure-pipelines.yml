@@ -647,8 +647,8 @@ stages:
                   -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
                   -Result $(DeployEnvInfra.EnvHostedExitCode)
                   -HostType "$(hostType)"
-                  -ResourceGroupName "$(SharedResourceGroupName)"
-                  -SubscriptionId "$(SharedSubscriptionId)"
+                  -ResourceGroupName "${{ env.value.resourceGroup }}"
+                  -SubscriptionId "${{ parameters.subscriptionId }}"
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
@@ -747,8 +747,8 @@ stages:
                   -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
                   -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
                   -HostType "$(hostType)"
-                  -ResourceGroupName "$(SharedResourceGroupName)"
-                  -SubscriptionId "$(SharedSubscriptionId)"
+                  -ResourceGroupName "${{ env.value.resourceGroup }}"
+                  -SubscriptionId "${{ parameters.subscriptionId }}"
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
@@ -847,8 +847,8 @@ stages:
                   -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
                   -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
                   -HostType "$(hostType)"
-                  -ResourceGroupName "$(SharedResourceGroupName)"
-                  -SubscriptionId "$(SharedSubscriptionId)"
+                  -ResourceGroupName "${{ env.value.resourceGroup }}"
+                  -SubscriptionId "${{ parameters.subscriptionId }}"
                   -FunctionAppName "$(FunctionAppName)"
                   -KeyVaultName "$(KeyVaultName)"
                   -StorageAccountName "$(StorageAccountName)"
