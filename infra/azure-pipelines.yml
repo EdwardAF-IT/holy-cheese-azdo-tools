@@ -72,19 +72,9 @@ variables:
   manifestName: 'artifact-manifest.json'
 
 stages:
-- stage: Provision_Subscription_Header
-  displayName: 'Subscription-Level'
-  condition: always()
-  jobs:
-  - job: NoOp
-    condition: false
-    steps:
-    - script: echo "Visual header only"
-
 - stage: Hosted_Subscription
   displayName: 'Hosted: Prepare Subscription-Level Resources (Hosted Agent)'
   condition: eq(variables.useHostedAgent, true)
-  dependsOn: [Provision_Subscription_Header]
   jobs:
   - job: ProvisionSubscriptionBaseline_HostedAgent
     pool:
@@ -141,7 +131,6 @@ stages:
 - stage: LocalFallback_Subscription
   displayName: 'Fallback: Subscription-Level Resources (Local Agent)'
   condition: and(eq(variables.useHostedAgent, true), failed())
-  dependsOn: [Provision_Subscription_Header]
   jobs:
   - job: ProvisionSubscriptionBaseline_FallbackToLocalAgent
     pool:
@@ -216,7 +205,6 @@ stages:
 - stage: LocalFlagDriven_Subscription
   displayName: 'Local Specified: Provision Subscription Resources via Local Agent'
   condition: eq(variables.useHostedAgent, false)
-  dependsOn: [Provision_Subscription_Header]
   jobs:
   - job: ProvisionSubscriptionBaseline_SpecifiedLocalAgent
     pool:
@@ -282,19 +270,10 @@ stages:
           -Result $(DeployInfra.SubFlagExitCode)
           -HostType "$(hostType)"
         
-- stage: Provision_Shared_Header
-  displayName: 'Shared Resources'
-  condition: always()
-  jobs:
-  - job: NoOp
-    condition: false
-    steps:
-    - script: echo "Visual header only"
-
 - stage: Hosted_Shared
   condition: eq(variables.useHostedAgent, true)
   displayName: 'Hosted: Provision Shared Resources with Hosted Agent'
-  dependsOn: [Provision_Shared_Header]
+  dependsOn: [Hosted_Subscription]
   jobs:
   - deployment: ProvisionSharedResources_HostedAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -317,12 +296,6 @@ stages:
               targetType: 'inline'
               script: |
                 echo "Using agent: $(Agent.Name)"
-
-          - task: DownloadPipelineArtifact@2
-            displayName: 'Download Latest Manifest'
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: '${{ variables.finalArtifactName }}'
 
           - task: AzureCLI@2
             name: DeploySharedInfra
@@ -397,7 +370,7 @@ stages:
 - stage: LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
   displayName: 'Fallback: Provision Shared Resources with Local Agent'
-  dependsOn: [Provision_Shared_Header]
+  dependsOn: [LocalFallback_Subscription]
   jobs:
   - deployment: ProvisionSharedResources_FallbackToLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -412,12 +385,6 @@ stages:
         deploy:
           steps:
           - checkout: self
-  
-          - task: DownloadPipelineArtifact@2
-            displayName: 'Download Latest Manifest'
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: '${{ variables.finalArtifactName }}'
 
           - task: AzureCLI@2
             name: DeploySharedFallbackInfra
@@ -498,7 +465,7 @@ stages:
 - stage: LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
   displayName: 'Local Specified: Provision Shared Resources (Local Agent)'
-  dependsOn: [Provision_Shared_Header]
+  dependsOn: [LocalFlagDriven_Subscription]
   jobs:
   - deployment: ProvisionSharedResources_SpecifiedLocalAgent
     environment: ${{ variables.sharedEnvironmentDisplayName }}
@@ -514,12 +481,6 @@ stages:
           steps:
           - checkout: self
   
-          - task: DownloadPipelineArtifact@2
-            displayName: 'Download Latest Manifest'
-            inputs:
-              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: '${{ variables.finalArtifactName }}'
-
           - task: AzureCLI@2
             name: DeploySharedInfra
             displayName: 'Deploy Shared Infrastructure (Refactored for Local Agent)'
@@ -596,20 +557,11 @@ stages:
                 -SharedHostingPlanName "$(SharedHostingPlanName)"
 
 - ${{ each env in parameters.environments }}:
-  - stage: Provision_${{ env.key }}_Header
-    displayName: 'Env: ${{ env.key }}'
-    condition: always()
-    jobs:
-    - job: NoOp
-      condition: false
-      steps:
-      - script: echo "Visual header only"
-
   - stage: Hosted_${{ env.key }}
     displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
     condition: eq(variables.useHostedAgent, true)
     dependsOn:
-      - Provision_${{ env.key }}_Header
+      - Hosted_Shared
     jobs:
     - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -633,12 +585,6 @@ stages:
                 script: |
                   echo "Using agent: $(Agent.Name)"
 
-            - task: DownloadPipelineArtifact@2
-              displayName: 'Download Latest Manifest'
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: '${{ variables.finalArtifactName }}'
- 
             - task: AzureCLI@2
               name: DeployEnvInfra
               displayName: 'Deploy Environment Infrastructure (Hosted)'
@@ -711,7 +657,7 @@ stages:
     displayName: 'Fallback to Local Agent'
     condition: and(eq(variables.useHostedAgent, true), failed())
     dependsOn:
-      - Provision_${{ env.key }}_Header
+      - LocalFallback_Shared
     jobs:
     - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -727,12 +673,6 @@ stages:
             steps:
             - checkout: self
   
-            - task: DownloadPipelineArtifact@2
-              displayName: 'Download Latest Manifest'
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: '${{ variables.finalArtifactName }}'
- 
             - task: AzureCLI@2
               name: DeployEnvFallbackInfra
               displayName: 'Deploy Environment Fallback (${ env.key })'
@@ -817,7 +757,7 @@ stages:
     displayName: 'Local Specified: Deploy to ${{ env.key }} (Local Agent)'
     condition: eq(variables.useHostedAgent, false)
     dependsOn:
-      - Provision_${{ env.key }}_Header
+      - LocalFlagDriven_Shared
     jobs:
     - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
       environment: ${{ env.value.environmentDisplayName }}
@@ -832,11 +772,6 @@ stages:
           deploy:
             steps:
             - checkout: self
-            - task: DownloadPipelineArtifact@2
-              displayName: 'Download Latest Manifest'
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: '${{ variables.finalArtifactName }}'
 
             - task: AzureCLI@2
               name: DeployEnvDirectInfra
@@ -921,12 +856,6 @@ stages:
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
   dependsOn:
-    - Hosted_Subscription
-    - LocalFallback_Subscription
-    - LocalFlagDriven_Subscription
-    - Hosted_Shared
-    - LocalFallback_Shared
-    - LocalFlagDriven_Shared
     - ${{ each env in parameters.environments }}:
         - Hosted_${{ env.key }}
         - LocalFallback_${{ env.key }}
@@ -937,12 +866,6 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download Final Manifest Artifact'
-      inputs:
-        artifact: ${{ variables.finalArtifactName }}
-        path: $(Pipeline.Workspace)/${{ variables.finalArtifactName }}
-
     - task: PublishPipelineArtifact@1
       displayName: 'Publish Provision Manifest'
       condition: always()
