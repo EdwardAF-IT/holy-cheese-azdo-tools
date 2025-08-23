@@ -1,33 +1,51 @@
 param (
-  [string] $EnvName,
-  [string] $HostType,
-  [string] $ResultFilePath,
-  [string] $Commit,
+  [string] $ManifestPath,
+  [string] $Environment,
   [string] $Version,
-  [string] $OutputPath,
-  [string] $ResourceGroupName,
-  [string] $FunctionAppName,
-  [string] $KeyVaultName,
-  [string] $StorageAccountName
+  [string] $Commit,
+  [string] $Notes,
+  [string] $ArtifactPath,
+  [int]    $Result,
+  [string] $HostType = "",
+  [string] $ResourceGroupName = "",
+  [string] $SubscriptionId = "",
+  [string] $SharedInsightsName = "",
+  [string] $SharedHostingPlanName = "",
+  [string] $FunctionAppName = "",
+  [string] $KeyVaultName = "",
+  [string] $StorageAccountName = ""
 )
 
-$metadata = @{
-  EnvName             = $EnvName
-  HostType            = $HostType
-  ResultFilePath      = $ResultFilePath
-  Commit              = $Commit
-  Version             = $Version
-  Timestamp           = (Get-Date).ToString("o")
-  ResourceGroupName   = $ResourceGroupName
-  FunctionAppName     = $FunctionAppName
-  KeyVaultName        = $KeyVaultName
-  StorageAccountName  = $StorageAccountName
+# Load existing manifest if it exists
+if (Test-Path $ManifestPath) {
+    $existing = Get-Content $ManifestPath | ConvertFrom-Json
+} else {
+    $existing = @{}
 }
 
-$folder = Split-Path -Path $OutputPath
-if (-not (Test-Path $folder)) {
-  New-Item -ItemType Directory -Path $folder -Force | Out-Null
+# Build new environment block
+$entry = @{
+    version = $Version
+    commit = $Commit
+    notes = $Notes
+    artifactPath = $ArtifactPath
+    result = $Result
+    hostType = $HostType
+    resourceGroup = $ResourceGroupName
+    subscriptionId = $SubscriptionId
+    sharedInsightsName = $SharedInsightsName
+    sharedHostingPlanName = $SharedHostingPlanName
+    functionAppName = $FunctionAppName
+    keyVaultName = $KeyVaultName
+    storageAccountName = $StorageAccountName
+    timestamp = (Get-Date).ToString("o")
 }
 
-$metadata | ConvertTo-Json -Depth 5 | Set-Content $OutputPath
-Write-Host "✅ Metadata written to $OutputPath"
+# Update the manifest under the environment key
+$existing[$Environment] = $entry
+
+# Write updated manifest
+$updatedJson = $existing | ConvertTo-Json -Depth 5
+$updatedJson | Out-File -FilePath $ManifestPath -Encoding UTF8
+
+Write-Host "✅ Manifest updated for environment: $Environment"

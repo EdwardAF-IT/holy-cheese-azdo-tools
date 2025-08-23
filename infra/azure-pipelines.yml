@@ -68,6 +68,8 @@ variables:
   useHostedAgent: ${{ parameters.useHostedAgent }}
   sharedResourceGroup: ${{ parameters.appName }}-RG-Shared
   sharedEnvironmentDisplayName: ${{ parameters.appName }}-Shared
+  finalArtifactName: 'ProvisionMetadata_Final'
+  manifestName: 'artifact-manifest.json'
 
 stages:
 - stage: Provision_Subscription_Header
@@ -101,6 +103,7 @@ stages:
 
     - task: AzureCLI@2
       name: DeployInfra
+      displayName: 'Deploy Subscription Baseline (Hosted)'
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: bash
@@ -111,53 +114,35 @@ stages:
             --location 'centralus' \
             --template-file infra/subscription-baseline.bicep \
             --parameters \
-              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs |  keys  +   ["Shared"]') \
+              rgSuffixes=$(jq -nc --argjson envs '${{ convertToJson(parameters.environments) }}' '$envs | keys + ["Shared"]') \
               projectPrefix=${{ parameters.appName }} \
               location='centralus'
-    
+
           exitCode=$?
           echo "##vso[task.setvariable variable=SubHostedExitCode;isOutput=true]$exitCode"
-      displayName: 'Deploy Subscription Baseline (Hosted)'
 
     - task: PowerShell@2
-      displayName: 'Log Provision Result'
-      condition: always()
-      inputs:
-        targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-        arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -Result $(DeployInfra.SubHostedExitCode)
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-    
-    - task: PowerShell@2
-      displayName: 'Write Artifact Metadata'
+      displayName: 'Write Subscription Manifest Block'
       condition: always()
       inputs:
         targetType: 'filePath'
         filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
         arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-          -Commit $(Build.SourceVersion)
-          -Version $(Build.BuildNumber)
-          -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
+          -ManifestPath "$(manifestPath)"
+          -Environment "$(envName)"
+          -Version "$(Build.BuildNumber)"
+          -Commit "$(Build.SourceVersion)"
+          -Notes "Provisioned subscription-level baseline (hosted)"
+          -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+          -Result $(DeployInfra.SubHostedExitCode)
+          -HostType "$(hostType)"
     
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Provision Metadata'
+      displayName: 'Publish Provision Manifest'
       condition: always()
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'ProvisionMetadata_$(System.StageName)'
-
-    - task: PowerShell@2
-      displayName: 'Log Artifact Name'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "📦 Publishing artifact: ProvisionMetadata_$(System.StageName)"
+        artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: LocalFallback_Subscription
   displayName: 'Fallback: Subscription-Level Resources (Local Agent)'
@@ -181,6 +166,7 @@ stages:
 
     - task: AzureCLI@2
       name: DeployInfra
+      displayName: 'Deploy Subscription Baseline (Fallback)'
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: ps
@@ -215,40 +201,29 @@ stages:
           Write-Host "##vso[task.setvariable variable=DeployInfraExitCode;isOutput=true]$exitCode"
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
-      displayName: 'Deploy Subscription Baseline (Fallback)'
 
     - task: PowerShell@2
-      displayName: 'Log Provision Result'
-      condition: always()
-      inputs:
-        targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-        arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -Result $(DeployInfra.DeployInfraExitCode)
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-    
-    - task: PowerShell@2
-      displayName: 'Write Artifact Metadata'
+      displayName: 'Write Subscription Manifest Block'
       condition: always()
       inputs:
         targetType: 'filePath'
         filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
         arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-          -Commit $(Build.SourceVersion)
-          -Version $(Build.BuildNumber)
-          -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
+          -ManifestPath "$(manifestPath)"
+          -Environment "$(envName)"
+          -Version "$(Build.BuildNumber)"
+          -Commit "$(Build.SourceVersion)"
+          -Notes "Provisioned subscription-level baseline (local fallback)"
+          -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+          -Result $(DeployInfra.DeployInfraExitCode)
+          -HostType "$(hostType)"
     
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Provision Metadata'
+      displayName: 'Publish Provision Manifest'
       condition: always()
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'ProvisionMetadata_$(System.StageName)'
+        artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: LocalFlagDriven_Subscription
   displayName: 'Local Specified: Provision Subscription Resources via Local Agent'
@@ -264,6 +239,7 @@ stages:
     steps:
     - task: AzureCLI@2
       name: DeployInfra
+      displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
       inputs:
         azureSubscription: 'HolyCheese-ServiceConnection'
         scriptType: ps
@@ -300,40 +276,29 @@ stages:
 
       env:
         parameters_environments: ${{ convertToJson(parameters.environments) }}
-      displayName: 'Deploy Subscription Baseline (Local Agent Refactored)'
 
     - task: PowerShell@2
-      displayName: 'Log Provision Result'
-      condition: always()
-      inputs:
-        targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-        arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -Result $(DeployInfra.SubFlagExitCode)
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-    
-    - task: PowerShell@2
-      displayName: 'Write Artifact Metadata'
+      displayName: 'Write Subscription Manifest Block'
       condition: always()
       inputs:
         targetType: 'filePath'
         filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
         arguments: >
-          -EnvName $(envName)
-          -HostType $(hostType)
-          -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-          -Commit $(Build.SourceVersion)
-          -Version $(Build.BuildNumber)
-          -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
+          -ManifestPath "$(manifestPath)"
+          -Environment "$(envName)"
+          -Version "$(Build.BuildNumber)"
+          -Commit "$(Build.SourceVersion)"
+          -Notes "Provisioned subscription-level baseline (local specified)"
+          -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+          -Result $(DeployInfra.SubFlagExitCode)
+          -HostType "$(hostType)"
     
     - task: PublishPipelineArtifact@1
-      displayName: 'Publish Provision Metadata'
+      displayName: 'Publish Provision Manifest'
       condition: always()
       inputs:
         targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-        artifactName: 'ProvisionMetadata_$(System.StageName)'
+        artifactName: '${{ variables.finalArtifactName }}'
         
 - stage: Provision_Shared_Header
   displayName: 'Shared Resources'
@@ -357,6 +322,7 @@ stages:
     variables:
       hostType: 0   # Hosted agent
       envName: 'shared'
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     strategy:
       runOnce:
         deploy:
@@ -421,41 +387,31 @@ stages:
             displayName: 'Verify Script Path'
 
           - task: PowerShell@2
-            displayName: 'Log Provision Result'
-            condition: always()
-            inputs:
-              targetType: 'filePath'
-              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-              arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -Result $(DeploySharedInfra.SharedHostedExitCode)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-
-          - task: PowerShell@2
-            displayName: 'Write Artifact Metadata'
+            displayName: 'Write Manifest Record'
             condition: always()
             inputs:
               targetType: 'filePath'
               filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
               arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                -Commit $(Build.SourceVersion)
-                -Version $(Build.BuildNumber)
-                -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                -ResourceGroupName $(SharedResourceGroupName)
-                -SubscriptionId $(SharedSubscriptionId)
-                -SharedInsightsName $(SharedInsightsName)
-                -SharedHostingPlanName $(SharedHostingPlanName)
+                -ManifestPath "$(manifestPath)"
+                -Environment "$(envName)"
+                -Version "$(Build.BuildNumber)"
+                -Commit "$(Build.SourceVersion)"
+                -Notes "Provisioned shared resources (hosted)"
+                -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -HostType "$(hostType)"
+                -ResourceGroupName "$(SharedResourceGroupName)"
+                -SubscriptionId "$(SharedSubscriptionId)"
+                -SharedInsightsName "$(SharedInsightsName)"
+                -SharedHostingPlanName "$(SharedHostingPlanName)"
 
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Metadata'
+            displayName: 'Publish Provision Manifest'
             condition: always()
             inputs:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionMetadata_$(System.StageName)'
+              artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: LocalFallback_Shared
   condition: and(eq(variables.useHostedAgent, true), failed())
@@ -469,6 +425,7 @@ stages:
     variables:
       hostType: 1       # Local agent
       envName: 'shared'
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     strategy:
       runOnce:
         deploy:
@@ -544,29 +501,31 @@ stages:
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
           - task: PowerShell@2
-            displayName: 'Write Artifact Metadata'
+            displayName: 'Write Manifest Record'
             condition: always()
             inputs:
               targetType: 'filePath'
               filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
               arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                -Commit $(Build.SourceVersion)
-                -Version $(Build.BuildNumber)
-                -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                -ResourceGroupName $(SharedResourceGroupName)
-                -SubscriptionId $(SharedSubscriptionId)
-                -SharedInsightsName $(SharedInsightsName)
-                -SharedHostingPlanName $(SharedHostingPlanName)
+                -ManifestPath "$(manifestPath)"
+                -Environment "$(envName)"
+                -Version "$(Build.BuildNumber)"
+                -Commit "$(Build.SourceVersion)"
+                -Notes "Provisioned shared resources (hosted)"
+                -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -HostType "$(hostType)"
+                -ResourceGroupName "$(SharedResourceGroupName)"
+                -SubscriptionId "$(SharedSubscriptionId)"
+                -SharedInsightsName "$(SharedInsightsName)"
+                -SharedHostingPlanName "$(SharedHostingPlanName)"
 
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Metadata'
+            displayName: 'Publish Provision Manifest'
             condition: always()
             inputs:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionMetadata_$(System.StageName)'
+              artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: LocalFlagDriven_Shared
   condition: eq(variables.useHostedAgent, false)
@@ -580,6 +539,7 @@ stages:
     variables:
       hostType: 2
       envName: 'shared'
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
     strategy:
       runOnce:
         deploy:
@@ -654,29 +614,31 @@ stages:
                 -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
 
           - task: PowerShell@2
-            displayName: 'Write Artifact Metadata'
+            displayName: 'Write Manifest Record'
             condition: always()
             inputs:
               targetType: 'filePath'
               filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
               arguments: >
-                -EnvName $(envName)
-                -HostType $(hostType)
-                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                -Commit $(Build.SourceVersion)
-                -Version $(Build.BuildNumber)
-                -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                -ResourceGroupName $(SharedResourceGroupName)
-                -SubscriptionId $(SharedSubscriptionId)
-                -SharedInsightsName $(SharedInsightsName)
-                -SharedHostingPlanName $(SharedHostingPlanName)
+                -ManifestPath "$(manifestPath)"
+                -Environment "$(envName)"
+                -Version "$(Build.BuildNumber)"
+                -Commit "$(Build.SourceVersion)"
+                -Notes "Provisioned shared resources (hosted)"
+                -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -HostType "$(hostType)"
+                -ResourceGroupName "$(SharedResourceGroupName)"
+                -SubscriptionId "$(SharedSubscriptionId)"
+                -SharedInsightsName "$(SharedInsightsName)"
+                -SharedHostingPlanName "$(SharedHostingPlanName)"
 
           - task: PublishPipelineArtifact@1
-            displayName: 'Publish Provision Metadata'
+            displayName: 'Publish Provision Manifest'
             condition: always()
             inputs:
               targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-              artifactName: 'ProvisionMetadata_$(System.StageName)'
+              artifactName: '${{ variables.finalArtifactName }}'
 
 - ${{ each env in parameters.environments }}:
   - stage: Provision_${{ env.key }}_Header
@@ -688,476 +650,364 @@ stages:
       steps:
       - script: echo "Visual header only"
 
-  - stage: Hosted_${{ env.key }}
-    displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
-    condition: eq(variables.useHostedAgent, true)
-    dependsOn:
-      - Provision_${{ env.key }}_Header
-    jobs:
-    - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
-      environment: ${{ env.value.environmentDisplayName }}
-      pool:
-        name: ${{ parameters.hostedAgentName }}
-        vmImage: 'ubuntu-latest'
-      variables:
-        hostType: 0
-        envName: ${{ env.key }}
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - checkout: self
-  
-            - task: Bash@3
-              displayName: 'Agent Info'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  echo "Using agent: $(Agent.Name)"
-  
-            - task: AzureCLI@2
-              name: DeployEnvInfra
-              displayName: 'Deploy Environment Infrastructure (Hosted)'
-              inputs:
-                azureSubscription: 'HolyCheese-ServiceConnection'
-                scriptType: bash
-                scriptLocation: inlineScript
-                inlineScript: |
-                  deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
-                  envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
-                  echo "🚀 Deploying ${{ env.key }} using template: $envFile"
-  
-                  az group update \
-                    --name ${{ env.value.resourceGroup }} \
-                    --set tags.Environment=${{ env.value.environmentDisplayName }} \
-                          tags.App='${{ parameters.appName }}'
-  
-                  az deployment group create \
-                    --name "$deploymentName" \
-                    --resource-group ${{ env.value.resourceGroup }} \
-                    --template-file "$envFile" \
-                    --parameters \
-                      appName='${{ parameters.appName }}' \
-                      environmentName='${{ env.key }}' \
-                      location='${{ env.value.location }}' \
-                      tags={} \
-                      subscriptionId='${{ parameters.subscriptionId }}'
-  
-                  # Extract outputs
-                  deploymentOutput=$(az deployment group show \
-                    --resource-group "${{ env.value.resourceGroup }}" \
-                    --name "$deploymentName" \
-                    --query "properties.outputs" \
-                    --output json)
-  
-                  functionAppName=$(echo "$deploymentOutput" | jq -r '.functionAppName.value')
-                  keyVaultName=$(echo "$deploymentOutput" | jq -r '.keyVaultName.value')
-                  storageAccountName=$(echo "$deploymentOutput" | jq -r '.storageAccountName.value')
-  
-                  # Set pipeline variables
-                  echo "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
-                  echo "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
-                  echo "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
-  
-                  exitCode=$?
-                  echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
-  
-            - task: PowerShell@2
-              displayName: 'Log Provision Result'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -Result $(DeployEnvInfra.EnvHostedExitCode)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-  
-            - task: PowerShell@2
-              displayName: 'Write Artifact Metadata'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                  -Commit $(Build.SourceVersion)
-                  -Version $(Build.BuildNumber)
-                  -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                  -FunctionAppName $(FunctionAppName)
-                  -KeyVaultName $(KeyVaultName)
-                  -StorageAccountName $(StorageAccountName)
-                  -ResourceGroupName ${{ env.value.resourceGroup }}
-  
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Provision Metadata'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'ProvisionMetadata_$(System.StageName)'
-
-  - stage: LocalFallback_${{ env.key }}
-    displayName: 'Fallback to Local Agent'
-    condition: and(eq(variables.useHostedAgent, true), failed())
-    dependsOn:
-      - Provision_${{ env.key }}_Header
-    jobs:
-    - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
-      environment: ${{ env.value.environmentDisplayName }}
-      pool:
-        name: ${{ parameters.localAgentName }}
-      variables:
-        hostType: 1
-        envName: ${{ env.key }}
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - checkout: self
-  
-            - task: AzureCLI@2
-              name: DeployEnvFallbackInfra
-              displayName: 'Deploy Environment Fallback (${ env.key })'
-              inputs:
-                azureSubscription: 'HolyCheese-ServiceConnection'
-                scriptType: ps
-                scriptLocation: inlineScript
-                inlineScript: |
-                  Write-Host "Using agent: $env:AGENT_NAME"
- 
-                  $deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
-                  $envKey = '${{ env.key }}'
-                  $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-                  Write-Host "Deploying $envKey using template: $templateFile"
-  
-                  $paramObj = @{
-                    appName         = @{ value = '${{ parameters.appName }}' }
-                    environmentName = @{ value = $envKey }
-                    location        = @{ value = '${{ env.value.location }}' }
-                    tags            = @{ value = @{} }
-                    subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
-                  }
-  
-                  $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
-                  $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-  
-                  Write-Host "Parameter file contents:"
-                  Get-Content $paramFilePath
-  
-                  az group update `
-                    --name '${{ env.value.resourceGroup }}' `
-                    --set tags.Environment='${{ env.value.environmentDisplayName }}' tags.App='${{ parameters.appName }}'
-  
-                  $deploymentName = "${{ parameters.appName }}-$envKey-deploy"
-                  az deployment group create `
-                    --name $deploymentName `
-                    --resource-group '${{ env.value.resourceGroup }}' `
-                    --template-file $templateFile `
-                    --parameters @$paramFilePath
-  
-                  # Extract outputs
-                  $deploymentOutput = az deployment group show `
-                    --resource-group '${{ env.value.resourceGroup }}' `
-                    --name $deploymentName `
-                    --query "properties.outputs" `
-                    --output json | ConvertFrom-Json
-  
-                  $functionAppName = $deploymentOutput.functionAppName.value
-                  $keyVaultName = $deploymentOutput.keyVaultName.value
-                  $storageAccountName = $deploymentOutput.storageAccountName.value
-  
-                  # Set pipeline variables
-                  Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
-                  Write-Host "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
-                  Write-Host "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
-  
-                  $exitCode = $LASTEXITCODE
-                  Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
-  
-            - task: PowerShell@2
-              displayName: 'Log Provision Result'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-  
-            - task: PowerShell@2
-              displayName: 'Write Artifact Metadata'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                  -Commit $(Build.SourceVersion)
-                  -Version $(Build.BuildNumber)
-                  -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                  -FunctionAppName $(FunctionAppName)
-                  -KeyVaultName $(KeyVaultName)
-                  -StorageAccountName $(StorageAccountName)
-                  -ResourceGroupName ${{ env.value.resourceGroup }}
-  
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Provision Metadata'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'ProvisionMetadata_$(System.StageName)'
-        
-  - stage: LocalFlagDriven_${{ env.key }}
-    displayName: 'Local Specified: Deploy to ${{ env.key }} (Local Agent)'
-    condition: eq(variables.useHostedAgent, false)
-    dependsOn:
-      - Provision_${{ env.key }}_Header
-    jobs:
-    - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
-      environment: ${{ env.value.environmentDisplayName }}
-      pool:
-        name: ${{ parameters.localAgentName }}
-      variables:
-        hostType: 2
-        envName: ${{ env.key }}
-      strategy:
-        runOnce:
-          deploy:
-            steps:
-            - checkout: self
-  
-            - task: AzureCLI@2
-              name: DeployEnvDirectInfra
-              displayName: 'Deploy Environment Direct (${ env.key })'
-              inputs:
-                azureSubscription: 'HolyCheese-ServiceConnection'
-                scriptType: ps
-                scriptLocation: inlineScript
-                inlineScript: |
-                  Write-Host "Using agent: $env:AGENT_NAME"
-
-                  $deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
-                  $envKey = '${{ env.key }}'
-                  $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
-                  Write-Host "Deploying $envKey using template: $templateFile"
-  
-                  $paramObj = @{
-                    appName         = @{ value = '${{ parameters.appName }}' }
-                    environmentName = @{ value = $envKey }
-                    location        = @{ value = '${{ env.value.location }}' }
-                    tags            = @{ value = @{} }
-                    subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
-                  }
-  
-                  $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
-                  $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
-  
-                  Write-Host "Parameter file contents:"
-                  Get-Content $paramFilePath
-  
-                  az group update `
-                    --name '${{ env.value.resourceGroup }}' `
-                    --set tags.Environment='${{ env.value.environmentDisplayName }}' tags.App='${{ parameters.appName }}'
-  
-                  $deploymentName = "${{ parameters.appName }}-$envKey-deploy"
-                  az deployment group create `
-                    --name $deploymentName `
-                    --resource-group '${{ env.value.resourceGroup }}' `
-                    --template-file $templateFile `
-                    --parameters @$paramFilePath
-  
-                  # Extract outputs
-                  $deploymentOutput = az deployment group show `
-                    --resource-group '${{ env.value.resourceGroup }}' `
-                    --name $deploymentName `
-                    --query "properties.outputs" `
-                    --output json | ConvertFrom-Json
-  
-                  $functionAppName = $deploymentOutput.functionAppName.value
-                  $keyVaultName = $deploymentOutput.keyVaultName.value
-                  $storageAccountName = $deploymentOutput.storageAccountName.value
-  
-                  # Set pipeline variables
-                  Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
-                  Write-Host "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
-                  Write-Host "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
-  
-                  $exitCode = $LASTEXITCODE
-                  Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
-  
-            - task: PowerShell@2
-              displayName: 'Log Provision Result'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-  
-            - task: PowerShell@2
-              displayName: 'Write Artifact Metadata'
-              condition: always()
-              inputs:
-                targetType: 'filePath'
-                filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
-                arguments: >
-                  -EnvName $(envName)
-                  -HostType $(hostType)
-                  -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
-                  -Commit $(Build.SourceVersion)
-                  -Version $(Build.BuildNumber)
-                  -OutputPath "$(Pipeline.Workspace)/ProvisionResult/artifact-metadata.json"
-                  -FunctionAppName $(FunctionAppName)
-                  -KeyVaultName $(KeyVaultName)
-                  -StorageAccountName $(StorageAccountName)
-                  -ResourceGroupName ${{ env.value.resourceGroup }}
-  
-            - task: PublishPipelineArtifact@1
-              displayName: 'Publish Provision Metadata'
-              condition: always()
-              inputs:
-                targetPath: '$(Pipeline.Workspace)/ProvisionResult'
-                artifactName: 'ProvisionMetadata_$(System.StageName)'
-
-- stage: MergeProvisionMetadata
-  displayName: 'Merge Provisioning Metadata'
+- stage: Hosted_${{ env.key }}
+  displayName: 'Hosted: Deploy ${{ env.key }} via Hosted Agent'
+  condition: eq(variables.useHostedAgent, true)
   dependsOn:
-    - Hosted_Subscription
-    - LocalFallback_Subscription
-    - LocalFlagDriven_Subscription
-    - Hosted_Shared
-    - LocalFallback_Shared
-    - LocalFlagDriven_Shared
-    - ${{ each env in parameters.environments }}:
-        - Hosted_${{ env.key }}
-        - LocalFallback_${{ env.key }}
-        - LocalFlagDriven_${{ env.key }}
-  condition: always()
+    - Provision_${{ env.key }}_Header
   jobs:
-  - job: MergeMetadataJob
-    displayName: 'Merge Metadata Files'
+  - deployment: ProvisionEnvResources_HostedAgent_${{ env.key }}
+    environment: ${{ env.value.environmentDisplayName }}
     pool:
+      name: ${{ parameters.hostedAgentName }}
       vmImage: 'ubuntu-latest'
-    steps:
-    - checkout: self
+    variables:
+      hostType: 0
+      envName: ${{ env.key }}
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
 
-    - ${{ each scope in parameters.provisionScopes }}:
-      - ${{ each mode in parameters.provisionModes }}:
-        - task: DownloadPipelineArtifact@2
-          displayName: 'Download ProvisionMetadata_${{ mode }}_${{ scope }}'
-          condition: always()
-          continueOnError: true
-          env:
-            POWERSHELL_TELEMETRY_OPTOUT: 1
-            errorActionPreference: silentlyContinue
-          inputs:
-            artifact: ProvisionMetadata_${{ mode }}_${{ scope }}
-            path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ scope }}
+          - task: Bash@3
+            displayName: 'Agent Info'
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "Using agent: $(Agent.Name)"
 
-    - ${{ each env in parameters.environments }}:
-      - ${{ each mode in parameters.provisionModes }}:
-        - task: DownloadPipelineArtifact@2
-          displayName: 'Download ProvisionMetadata_${{ mode }}_${{ env.key }}'
-          condition: always()
-          continueOnError: true
-          env:
-            POWERSHELL_TELEMETRY_OPTOUT: 1
-            errorActionPreference: silentlyContinue          
-          inputs:
-            artifact: ProvisionMetadata_${{ mode }}_${{ env.key }}
-            path: $(Pipeline.Workspace)/ProvisionMetadata_${{ mode }}_${{ env.key }}
+          - task: AzureCLI@2
+            name: DeployEnvInfra
+            displayName: 'Deploy Environment Infrastructure (Hosted)'
+            inputs:
+              azureSubscription: 'HolyCheese-ServiceConnection'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
+                envFile="infra/environments/${{ parameters.appName }}-${{ env.key }}.bicep"
+                echo "🚀 Deploying ${{ env.key }} using template: $envFile"
 
-    # List downloaded folders
-    - task: PowerShell@2
-      displayName: 'List Available Artifacts'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Get-ChildItem "$(Pipeline.Workspace)" -Directory | ForEach-Object {
-            Write-Host "📁 Artifact folder: $($_.Name)"
-          }
+                az group update \
+                  --name ${{ env.value.resourceGroup }} \
+                  --set tags.Environment=${{ env.value.environmentDisplayName }} \
+                        tags.App='${{ parameters.appName }}'
 
-    # Ensure merged directory exists
-    - task: PowerShell@2
-      displayName: 'Ensure merged directory exists'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $mergedPath = "$(Pipeline.Workspace)/merged"
-          if (-not (Test-Path $mergedPath)) {
-            New-Item -ItemType Directory -Path $mergedPath | Out-Null
-          }
+                az deployment group create \
+                  --name "$deploymentName" \
+                  --resource-group ${{ env.value.resourceGroup }} \
+                  --template-file "$envFile" \
+                  --parameters \
+                    appName='${{ parameters.appName }}' \
+                    environmentName='${{ env.key }}' \
+                    location='${{ env.value.location }}' \
+                    tags={} \
+                    subscriptionId='${{ parameters.subscriptionId }}'
 
-    # Merge metadata files
-    - task: PowerShell@2
-      displayName: 'Merge Metadata Files'
-      inputs:
-        targetType: 'filePath'
-        filePath: '$(Build.SourcesDirectory)/infra/scripts/Merge-ArtifactMetadata.ps1'
-        arguments: >
-          -MetadataRoot "$(Pipeline.Workspace)"
-          -OutputPath "$(Pipeline.Workspace)/merged/manifest.json"
+                # Extract outputs
+                deploymentOutput=$(az deployment group show \
+                  --resource-group "${{ env.value.resourceGroup }}" \
+                  --name "$deploymentName" \
+                  --query "properties.outputs" \
+                  --output json)
 
-    # Prepare final artifact folder
-    - task: PowerShell@2
-      displayName: 'Prepare Final Artifact Folder'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
-          if (!(Test-Path $publishDir)) {
-            New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
-          }
-      
-          $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
-          if (Test-Path $manifestPath) {
-            Write-Host "✅ Manifest found: $manifestPath"
-            Copy-Item -Path $manifestPath -Destination $publishDir -Force
-            Write-Host "✅ Manifest copied to: $publishDir"
-          } else {
-            Write-Host "⚠️ Manifest not found, skipping copy"
-          }
+                functionAppName=$(echo "$deploymentOutput" | jq -r '.functionAppName.value')
+                keyVaultName=$(echo "$deploymentOutput" | jq -r '.keyVaultName.value')
+                storageAccountName=$(echo "$deploymentOutput" | jq -r '.storageAccountName.value')
 
-    # Mark job as succeeded if manifest exists
-    - task: PowerShell@2
-      displayName: 'Mark Job as Succeeded if Manifest Exists'
-      condition: always()
-      inputs:
-        targetType: 'inline'
-        script: |
-          $manifestPath = "$(Pipeline.Workspace)/merged/manifest.json"
-          if (Test-Path $manifestPath) {
-            Write-Host "##vso[task.complete result=Succeeded;]✅ Manifest file found at $manifestPath. Marking job as succeeded."
-            exit 0
-          } else {
-            Write-Host "❌ Manifest file not found. Job will be marked as failed."
-            exit 1
-          }
+                # Set pipeline variables
+                echo "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+                echo "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
+                echo "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
 
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Merged Manifest'
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionMetadata_Final'
-        artifactName: 'ProvisionManifest_Final'
+                exitCode=$?
+                echo "##vso[task.setvariable variable=EnvHostedExitCode;isOutput=true]$exitCode"
 
-    - task: PowerShell@2
-      displayName: 'Force Job Status to Succeeded'
-      condition: always()
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "✅ Forcing job status to Succeeded rather than Partially Succeeded"
-          Write-Host "##vso[task.complete result=Succeeded;]"
+          - task: PowerShell@2
+            displayName: 'Log Provision Result'
+            condition: always()
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+              arguments: >
+                -EnvName $(envName)
+                -HostType $(hostType)
+                -Result $(DeployEnvInfra.EnvHostedExitCode)
+                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+          - task: PowerShell@2
+            displayName: 'Write Manifest Record'
+            condition: always()
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
+              arguments: >
+                -ManifestPath "$(manifestPath)"
+                -Environment "$(envName)"
+                -Version "$(Build.BuildNumber)"
+                -Commit "$(Build.SourceVersion)"
+                -Notes "Provisioned shared resources (hosted)"
+                -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -HostType "$(hostType)"
+                -ResourceGroupName "$(SharedResourceGroupName)"
+                -SubscriptionId "$(SharedSubscriptionId)"
+                -SharedInsightsName "$(SharedInsightsName)"
+                -SharedHostingPlanName "$(SharedHostingPlanName)"
+                -FunctionAppName "$(FunctionAppName)"
+                -KeyVaultName "$(KeyVaultName)"
+                -StorageAccountName "$(StorageAccountName)"
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Provision Manifest'
+            condition: always()
+            inputs:
+              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+              artifactName: '${{ variables.finalArtifactName }}'
+
+- stage: LocalFallback_${{ env.key }}
+  displayName: 'Fallback to Local Agent'
+  condition: and(eq(variables.useHostedAgent, true), failed())
+  dependsOn:
+    - Provision_${{ env.key }}_Header
+  jobs:
+  - deployment: ProvisionEnvResources_FallbackToLocalAgent_${{ env.key }}
+    environment: ${{ env.value.environmentDisplayName }}
+    pool:
+      name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 1
+      envName: ${{ env.key }}
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            name: DeployEnvFallbackInfra
+            displayName: 'Deploy Environment Fallback (${ env.key })'
+            inputs:
+              azureSubscription: 'HolyCheese-ServiceConnection'
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                Write-Host "Using agent: $env:AGENT_NAME"
+
+                $deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
+                $envKey = '${{ env.key }}'
+                $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+                Write-Host "Deploying $envKey using template: $templateFile"
+
+                $paramObj = @{
+                  appName         = @{ value = '${{ parameters.appName }}' }
+                  environmentName = @{ value = $envKey }
+                  location        = @{ value = '${{ env.value.location }}' }
+                  tags            = @{ value = @{} }
+                  subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+                }
+
+                $paramFilePath = Join-Path $env:TEMP "$envKey-fallback-params.json"
+                $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+
+                Write-Host "Parameter file contents:"
+                Get-Content $paramFilePath
+
+                az group update `
+                  --name '${{ env.value.resourceGroup }}' `
+                  --set tags.Environment='${{ env.value.environmentDisplayName }}' tags.App='${{ parameters.appName }}'
+
+                $deploymentName = "${{ parameters.appName }}-$envKey-deploy"
+                az deployment group create `
+                  --name $deploymentName `
+                  --resource-group '${{ env.value.resourceGroup }}' `
+                  --template-file $templateFile `
+                  --parameters @$paramFilePath
+
+                # Extract outputs
+                $deploymentOutput = az deployment group show `
+                  --resource-group '${{ env.value.resourceGroup }}' `
+                  --name $deploymentName `
+                  --query "properties.outputs" `
+                  --output json | ConvertFrom-Json
+
+                $functionAppName = $deploymentOutput.functionAppName.value
+                $keyVaultName = $deploymentOutput.keyVaultName.value
+                $storageAccountName = $deploymentOutput.storageAccountName.value
+
+                # Set pipeline variables
+                Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+                Write-Host "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
+                Write-Host "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
+
+                $exitCode = $LASTEXITCODE
+                Write-Host "##vso[task.setvariable variable=EnvFallbackExitCode;isOutput=true]$exitCode"
+
+          - task: PowerShell@2
+            displayName: 'Log Provision Result'
+            condition: always()
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+              arguments: >
+                -EnvName $(envName)
+                -HostType $(hostType)
+                -Result $(DeployEnvFallbackInfra.EnvFallbackExitCode)
+                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+          - task: PowerShell@2
+            displayName: 'Write Manifest Record'
+            condition: always()
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
+              arguments: >
+                -ManifestPath "$(manifestPath)"
+                -Environment "$(envName)"
+                -Version "$(Build.BuildNumber)"
+                -Commit "$(Build.SourceVersion)"
+                -Notes "Provisioned shared resources (hosted)"
+                -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -HostType "$(hostType)"
+                -ResourceGroupName "$(SharedResourceGroupName)"
+                -SubscriptionId "$(SharedSubscriptionId)"
+                -SharedInsightsName "$(SharedInsightsName)"
+                -SharedHostingPlanName "$(SharedHostingPlanName)"
+                -FunctionAppName "$(FunctionAppName)"
+                -KeyVaultName "$(KeyVaultName)"
+                -StorageAccountName "$(StorageAccountName)"
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Provision Manifest'
+            condition: always()
+            inputs:
+              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+              artifactName: '${{ variables.finalArtifactName }}'
+        
+- stage: LocalFlagDriven_${{ env.key }}
+  displayName: 'Local Specified: Deploy to ${{ env.key }} (Local Agent)'
+  condition: eq(variables.useHostedAgent, false)
+  dependsOn:
+    - Provision_${{ env.key }}_Header
+  jobs:
+  - deployment: ProvisionEnvResources_SpecifiedLocalAgent_${{ env.key }}
+    environment: ${{ env.value.environmentDisplayName }}
+    pool:
+      name: ${{ parameters.localAgentName }}
+    variables:
+      hostType: 2
+      envName: ${{ env.key }}
+      manifestPath: '$(Pipeline.Workspace)/ProvisionResult/${{ variables.manifestName }}'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - task: AzureCLI@2
+            name: DeployEnvDirectInfra
+            displayName: 'Deploy Environment Direct (${ env.key })'
+            inputs:
+              azureSubscription: 'HolyCheese-ServiceConnection'
+              scriptType: ps
+              scriptLocation: inlineScript
+              inlineScript: |
+                Write-Host "Using agent: $env:AGENT_NAME"
+
+                $deploymentName="${{ parameters.appName }}-${{ env.key }}-deploy"
+                $envKey = '${{ env.key }}'
+                $templateFile = "infra/environments/${{ parameters.appName }}-$envKey.bicep"
+                Write-Host "Deploying $envKey using template: $templateFile"
+
+                $paramObj = @{
+                  appName         = @{ value = '${{ parameters.appName }}' }
+                  environmentName = @{ value = $envKey }
+                  location        = @{ value = '${{ env.value.location }}' }
+                  tags            = @{ value = @{} }
+                  subscriptionId  = @{ value = '${{ parameters.subscriptionId }}' }
+                }
+
+                $paramFilePath = Join-Path $env:TEMP "$envKey-deploy-params.json"
+                $paramObj | ConvertTo-Json -Depth 2 | Set-Content -Path $paramFilePath -Encoding UTF8
+
+                Write-Host "Parameter file contents:"
+                Get-Content $paramFilePath
+
+                az group update `
+                  --name '${{ env.value.resourceGroup }}' `
+                  --set tags.Environment='${{ env.value.environmentDisplayName }}' tags.App='${{ parameters.appName }}'
+
+                $deploymentName = "${{ parameters.appName }}-$envKey-deploy"
+                az deployment group create `
+                  --name $deploymentName `
+                  --resource-group '${{ env.value.resourceGroup }}' `
+                  --template-file $templateFile `
+                  --parameters @$paramFilePath
+
+                # Extract outputs
+                $deploymentOutput = az deployment group show `
+                  --resource-group '${{ env.value.resourceGroup }}' `
+                  --name $deploymentName `
+                  --query "properties.outputs" `
+                  --output json | ConvertFrom-Json
+
+                $functionAppName = $deploymentOutput.functionAppName.value
+                $keyVaultName = $deploymentOutput.keyVaultName.value
+                $storageAccountName = $deploymentOutput.storageAccountName.value
+
+                # Set pipeline variables
+                Write-Host "##vso[task.setvariable variable=FunctionAppName]$functionAppName"
+                Write-Host "##vso[task.setvariable variable=KeyVaultName]$keyVaultName"
+                Write-Host "##vso[task.setvariable variable=StorageAccountName]$storageAccountName"
+
+                $exitCode = $LASTEXITCODE
+                Write-Host "##vso[task.setvariable variable=EnvLocalExitCode;isOutput=true]$exitCode"
+
+          - task: PowerShell@2
+            displayName: 'Log Provision Result'
+            condition: always()
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/infra/scripts/Log-ProvisionResult.ps1'
+              arguments: >
+                -EnvName $(envName)
+                -HostType $(hostType)
+                -Result $(DeployEnvDirectInfra.EnvLocalExitCode)
+                -ResultFilePath "$(Pipeline.Workspace)/ProvisionResult/provision-results.json"
+
+          - task: PowerShell@2
+            displayName: 'Write Manifest Record'
+            condition: always()
+            inputs:
+              targetType: 'filePath'
+              filePath: '$(Build.SourcesDirectory)/infra/scripts/Write-ArtifactMetadata.ps1'
+              arguments: >
+                -ManifestPath "$(manifestPath)"
+                -Environment "$(envName)"
+                -Version "$(Build.BuildNumber)"
+                -Commit "$(Build.SourceVersion)"
+                -Notes "Provisioned shared resources (hosted)"
+                -ArtifactPath "$(Pipeline.Workspace)/ProvisionResult/functionapp.zip"
+                -Result $(DeploySharedInfra.SharedHostedExitCode)
+                -HostType "$(hostType)"
+                -ResourceGroupName "$(SharedResourceGroupName)"
+                -SubscriptionId "$(SharedSubscriptionId)"
+                -SharedInsightsName "$(SharedInsightsName)"
+                -SharedHostingPlanName "$(SharedHostingPlanName)"
+                -FunctionAppName "$(FunctionAppName)"
+                -KeyVaultName "$(KeyVaultName)"
+                -StorageAccountName "$(StorageAccountName)"
+
+          - task: PublishPipelineArtifact@1
+            displayName: 'Publish Provision Manifest'
+            condition: always()
+            inputs:
+              targetPath: '$(Pipeline.Workspace)/ProvisionResult'
+              artifactName: '${{ variables.finalArtifactName }}'
 
 - stage: EvaluateProvisionMatrix
   displayName: 'Evaluate Provisioning Final Result'
@@ -1172,189 +1022,37 @@ stages:
         - Hosted_${{ env.key }}
         - LocalFallback_${{ env.key }}
         - LocalFlagDriven_${{ env.key }}
-    - MergeProvisionMetadata
   condition: always()
   jobs:
   - job: VerifyProvisioning
     pool:
       vmImage: 'ubuntu-latest'
     steps:
-    # Grab the previous stage's copy of the merged manifest
     - task: DownloadPipelineArtifact@2
-      displayName: 'Download Merged Manifest Artifact'
+      displayName: 'Download Final Manifest Artifact'
       inputs:
-        artifact: ProvisionManifest_Final
-        path: $(Pipeline.Workspace)/ProvisionManifest_Final
-
-    # Download all stage-level artifacts
-    - task: DownloadPipelineArtifact@2
-      displayName: 'Download All Stage Results'
-      inputs:
-        path: '$(Pipeline.Workspace)/AllResults'
+        artifact: ${{ variables.finalArtifactName }}
+        path: $(Pipeline.Workspace)/${{ variables.finalArtifactName }}
 
     - task: PowerShell@2
-      displayName: 'List Downloaded Artifacts'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
-            Write-Host "📦 Found: $($_.FullName)"
-          }
-
-    - task: PowerShell@2
-      displayName: 'Inspect Each Provision Result File'
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "🕵️ Checking contents of provision-results.json files..."
-          $files = Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json
-          foreach ($file in $files) {
-            Write-Host "`n📄 File: $($file.FullName)"
-            try {
-              $content = Get-Content $file.FullName | ConvertFrom-Json
-              $content | Format-List
-            } catch {
-              Write-Host "❌ Failed to parse $($file.FullName)"
-            }
-          }
-
-    # Merge all provision-results.json files
-    - task: PowerShell@2
-      displayName: 'Merge Provision Results'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $finalDir = "$(Pipeline.Workspace)/Final"
-          if (!(Test-Path $finalDir)) {
-              New-Item -Path $finalDir -ItemType Directory -Force | Out-Null
-          }
-    
-          $merged = @()
-          Get-ChildItem "$(Pipeline.Workspace)/AllResults" -Recurse -Filter provision-results.json | ForEach-Object {
-              $content = Get-Content $_.FullName | ConvertFrom-Json
-              $merged += $content
-          }
-    
-          $mergedPath = Join-Path $finalDir 'provision-results.json'
-          $merged | ConvertTo-Json -Depth 10 | Set-Content $mergedPath
-
-    - task: PowerShell@2
-      displayName: 'Print Merged JSON File Contents for Validation'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $resultsPath = "$(Pipeline.Workspace)/Final/provision-results.json"
-    
-          if (!(Test-Path $resultsPath)) {
-            Write-Host "❌ Results file not found at $resultsPath"
-            exit 1
-          }
-    
-          Write-Host "`n📄 Raw JSON from ${resultsPath}:"
-          Get-Content $resultsPath -Raw
-
-    - task: PowerShell@2
-      displayName: 'Summarize Provision Results'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $resultsPath = "$(Pipeline.Workspace)/Final/provision-results.json"
-    
-          if (!(Test-Path $resultsPath)) {
-            Write-Host "❌ Results file not found at $resultsPath"
-            exit 1
-          }
-    
-          $rawJson = Get-Content $resultsPath -Raw
-          $data = $null
-          try {
-            $data = $rawJson | ConvertFrom-Json
-          } catch {
-            Write-Host "❌ Failed to parse provision-results.json"
-            exit 1
-          }
-    
-          $grouped = $data | Group-Object EnvName
-    
-          Write-Host "`n✅ Summary of provision results:"
-          foreach ($envGroup in $grouped) {
-            Write-Host "🔹 Environment: $($envGroup.Name)"
-            foreach ($entry in $envGroup.Group) {
-              $hostLabel = if ($entry.HostType -eq 1) { "Local" } elseif ($entry.HostType -eq 2) { "Hosted" } else { "Unknown" }
-              $status = if ($entry.Result -eq 0) { "Success" } elseif ($entry.Result -eq 1) { "Failed" } else { "Unknown" }
-              Write-Host "    • HostType: $hostLabel → Result: $status"
-            }
-          }
-
-    - task: PowerShell@2
-      displayName: 'List Existing Files in Final Artifact Folder'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
-          if (Test-Path $publishDir) {
-            Write-Host "📁 Existing contents of ${publishDir}:"
-            Get-ChildItem $publishDir | ForEach-Object {
-              Write-Host "  - $($_.Name)"
-            }
-          } else {
-            Write-Host "⚠️ ${publishDir} does not exist yet"
-          }
-    
-    - task: PowerShell@2
-      displayName: 'Add Provision Results to Final Artifact Folder'
-      inputs:
-        targetType: 'inline'
-        script: |
-          $publishDir = "$(Pipeline.Workspace)/ProvisionMetadata_Final"
-          if (!(Test-Path $publishDir)) {
-            New-Item -Path $publishDir -ItemType Directory -Force | Out-Null
-            Write-Host "📁 Created final artifact folder: ${publishDir}"
-          }
-        
-          $resultsFile = "$(Pipeline.Workspace)/Final/provision-results.json"
-          if (Test-Path $resultsFile) {
-            Copy-Item -Path $resultsFile -Destination $publishDir -Force
-            Write-Host "✅ Added provision-results.json to ${publishDir}"
-          } else {
-            Write-Host "⚠️ provision-results.json not found, skipping copy"
-          }
-        
-          $manifestFile = "$(Pipeline.Workspace)/ProvisionManifest_Final/manifest.json"
-          if (Test-Path $manifestFile) {
-            Copy-Item -Path $manifestFile -Destination $publishDir -Force
-            Write-Host "✅ Added manifest.json to ${publishDir}"
-          } else {
-            Write-Host "⚠️ manifest.json not found in ProvisionManifest_Final, skipping copy"
-          }
-
-    # Publish the merged result file
-    - task: PublishPipelineArtifact@1
-      displayName: 'Publish Final Aggregated Result'
-      inputs:
-        targetPath: '$(Pipeline.Workspace)/ProvisionMetadata_Final'
-        artifactName: 'ProvisionMetadata_Final'
-
-    # Evaluate the merged result
-    - task: PowerShell@2
-      displayName: 'Evaluate Provision Matrix'
+      displayName: 'Evaluate Provision Matrix from Manifest'
       inputs:
         targetType: 'inline'
         script: |
           . '$(Build.SourcesDirectory)/infra/scripts/Evaluate-ProvisionMatrix.ps1'
-    
-          $finalPath = "$(Pipeline.Workspace)/Final/provision-results.json"
-    
-          if (-not (Test-Path $finalPath)) {
-            Write-Host "##vso[task.complete result=SucceededWithIssues;]Result file missing — fallback may have failed"
+
+          $manifestPath = "$(Pipeline.Workspace)/${{ variables.finalArtifactName }}/${{ variables.manifestName }}"
+
+          if (!(Test-Path $manifestPath)) {
+            Write-Host "##vso[task.complete result=SucceededWithIssues;]Manifest missing — fallback may have failed"
             exit 0
           }
-    
-          $results = Get-Content $finalPath | ConvertFrom-Json
-          $eval = Evaluate-ProvisionMatrix -Results $results
-    
+
+          $manifest = Get-Content $manifestPath | ConvertFrom-Json
+          $eval = Evaluate-ProvisionMatrix -Manifest $manifest
+
           if (-not $eval.Success) {
-            Write-Host "Provisioning matrix incomplete:"
+            Write-Host "`n❌ Provisioning matrix incomplete:"
             if ($eval.MissingEnvs.Count -gt 0) {
               Write-Host "  - Missing host coverage for envs: $($eval.MissingEnvs -join ', ')"
             }
@@ -1363,7 +1061,6 @@ stages:
             Write-Host "##vso[task.complete result=Failed;]Provision matrix failed"
             exit 1
           }
-    
-          Write-Host "Provisioning matrix is complete."
+
+          Write-Host "`n✅ Provisioning matrix is complete."
           Write-Host "##vso[task.complete result=Succeeded;]Provision matrix passed"
-          exit 0

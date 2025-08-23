@@ -102,7 +102,7 @@ stages:
       inputs:
         command: 'test'
         projects: '**/*UnitTests.csproj'
-        arguments: '--configuration Release'
+        arguments: '--configuration Release --logger "trx"'
 
     - task: PublishTestResults@2
       condition: succeededOrFailed()
@@ -120,6 +120,8 @@ stages:
     pool:
       vmImage: 'ubuntu-latest'
     steps:
+    - download: infraProducer
+      artifact: ProvisionMetadata_Final
     - template: ../templates/manifest-read.yml
       parameters:
         manifestPath: ${{ variables.manifestPath }}

@@ -1,7 +1,7 @@
 parameters:
   - name: manifestPath
     type: string
-    default: '$(Pipeline.Workspace)/ProvisionMetadata_Final/manifest.json'
+    default: '$(Pipeline.Workspace)/infraProducer/ProvisionMetadata_Final/manifest.json'
   - name: version
     type: string
     default: 'v0'
