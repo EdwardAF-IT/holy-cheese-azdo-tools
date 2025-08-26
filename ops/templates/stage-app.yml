@@ -5,6 +5,8 @@ parameters:
   type: string
 - name: packageVersion
   type: string
+- name: azureServiceConnection
+  type: string
 
 stages:
 - stage: App
@@ -40,7 +42,7 @@ stages:
       - task: AzureCLI@2
         displayName: Publish to blob (${{ envName }})
         inputs:
-          azureSubscription: ${{ azureServiceConnection }}
+          azureSubscription: ${{ parameters.azureServiceConnection }}
           scriptType: pscore
           scriptLocation: inlineScript
           inlineScript: |
@@ -59,7 +61,7 @@ stages:
       - task: AzureCLI@2
         displayName: Infra readiness check (${{ envName }})
         inputs:
-          azureSubscription: ${{ azureServiceConnection }}
+          azureSubscription: ${{ parameters.azureServiceConnection }}
           scriptType: pscore
           scriptLocation: scriptPath
           scriptPath: ops/scripts/check-infra.ps1
@@ -67,7 +69,7 @@ stages:
       - task: AzureCLI@2
         displayName: Deploy function (${{ envName }})
         inputs:
-          azureSubscription: ${{ azureServiceConnection }}
+          azureSubscription: ${{ parameters.azureServiceConnection }}
           scriptType: pscore
           scriptLocation: inlineScript
           inlineScript: |

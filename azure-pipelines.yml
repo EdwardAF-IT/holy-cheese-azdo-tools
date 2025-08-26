@@ -35,10 +35,12 @@ stages:
   - template: ops/templates/stage-infra.yml
     parameters:
       targetEnvs: ${{ parameters.targetEnvs }}
-
+      azureServiceConnection: ${{ variables.azureServiceConnection }}
+      
 - ${{ if eq(parameters.deployApp, true) }}:
   - template: ops/templates/stage-app.yml
     parameters:
       targetEnvs: ${{ parameters.targetEnvs }}
       appName: ${{ parameters.appName }}
       packageVersion: ${{ parameters.packageVersion }}
+      azureServiceConnection: ${{ variables.azureServiceConnection }}
