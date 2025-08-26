@@ -18,7 +18,7 @@ stages:
       - task: AzureCLI@2
         displayName: Deploy infra (${{ envName }})
         inputs:
-          azureSubscription: ${{ parameters.azureServiceConnection }}
+          connectedServiceNameARM: ${{ parameters.azureServiceConnection }}
           scriptType: pscore
           scriptLocation: inlineScript
           inlineScript: |
