@@ -9,8 +9,8 @@ $ErrorActionPreference = 'Stop'
 
 # Load helpers and configs
 . "$PSScriptRoot/_common.ps1"
-$cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yaml")
-$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yaml")
+$cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
+$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yml")
 $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
 

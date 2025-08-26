@@ -14,8 +14,8 @@ $ErrorActionPreference = 'Stop'
 
 # Load shared config and helpers
 . "$PSScriptRoot/_common.ps1"
-$cfg     = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yaml")
-$envs    = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yaml")
+$cfg     = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
+$envs    = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yml")
 $envCfg  = $envs.environments.$Env
 if (-not $envCfg) { throw "Unknown environment '$Env'" }
 

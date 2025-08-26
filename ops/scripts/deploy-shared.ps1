@@ -1,7 +1,7 @@
 param([string]$Location = 'centralus')
 
 . "$PSScriptRoot/_common.ps1"
-$cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yaml")
+$cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
 $bicep = 'infra/bicep/modules/shared-resources.bicep'
 
 $tags = @{

@@ -9,8 +9,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot/_common.ps1"
-$cfg  = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yaml")
-$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yaml")
+$cfg  = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
+$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yml")
 Import-Module $cfg.paths.namingModule -Force
 
 # Select subscription once
