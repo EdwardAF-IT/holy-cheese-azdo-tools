@@ -10,8 +10,8 @@ stages:
 - stage: App
   displayName: App
   jobs:
-  - job: BuildPublish
-    displayName: Build and publish ${{ parameters.appName }}
+  - job: Build
+    displayName: Build ${{ parameters.appName }}
     pool:
       name: 'Azure Pipelines'
       vmImage: 'windows-latest'
@@ -20,32 +20,41 @@ stages:
       displayName: Setup .NET SDK
       inputs:
         packageType: 'sdk'
-        version: '$(DotnetSdk)'   # Define DotnetSdk=8.0.x in pipeline variables or derive from ops/config.yaml in a script
+        version: '8.0.x'  # or use a pipeline variable if preferred
     - task: PowerShell@2
       displayName: Build app
       inputs:
         pwsh: true
         filePath: ops/scripts/build-app.ps1
         arguments: -App ${{ parameters.appName }}
-    - task: AzureCLI@2
-      displayName: Publish package to all target env storages
-      inputs:
-        azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
-        scriptType: pscore
-        scriptLocation: inlineScript
-        inlineScript: |
-          $envs = @(@'
-${{ join(parameters.targetEnvs, "' , '") }}
-'@)
-          pwsh -File ops/scripts/publish-package.ps1 -Envs $envs -App '${{ parameters.appName }}'
 
+  # Publish per environment
   - ${{ each envName in parameters.targetEnvs }}:
-    - job: Deploy_${{ envName }}
-      displayName: Deploy ${{ parameters.appName }} (${{ envName }})
-      dependsOn: BuildPublish
+    - job: Publish_${{ envName }}
+      displayName: Publish package (${{ envName }})
+      dependsOn: Build
       pool:
         name: 'Azure Pipelines'
         vmImage: 'windows-latest'
+      steps:
+      - task: AzureCLI@2
+        displayName: Publish to blob (${{ envName }})
+        inputs:
+          azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            pwsh -File ops/scripts/publish-package.ps1 -Envs '${{ envName }}' -App '${{ parameters.appName }}'
+
+  # Deploy per environment
+  - ${{ each envName in parameters.targetEnvs }}:
+    - job: Deploy_${{ envName }}
+      displayName: Deploy ${{ parameters.appName }} (${{ envName }})
+      dependsOn: Publish_${{ envName }}
+      pool:
+        name: 'Azure Pipelines'
+        vmImage: 'windows-latest'
+      environment: 'AzdoTools-${{ envName | title }}'
       steps:
       - task: AzureCLI@2
         displayName: Infra readiness check (${{ envName }})
@@ -63,5 +72,5 @@ ${{ join(parameters.targetEnvs, "' , '") }}
           scriptLocation: inlineScript
           inlineScript: |
             $version = '${{ parameters.packageVersion }}'
-            if ([string]::IsNullOrWhiteSpace($version)) { $version = $env:BUILD_SOURCEVERSION.Substring(0,7) }
+            if ([string]::IsNullOrWhiteSpace($version)) { $version = 'auto' }
             pwsh -File ops/scripts/deploy-app.ps1 -Env '${{ envName }}' -App '${{ parameters.appName }}' -Version $version
