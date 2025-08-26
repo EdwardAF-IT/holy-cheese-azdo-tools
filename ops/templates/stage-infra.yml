@@ -18,7 +18,7 @@ stages:
       - task: AzureCLI@2
         displayName: Deploy infra (${{ envName }})
         inputs:
-          connectedServiceNameARM: ${{ parameters.azureServiceConnection }}
+          connectedServiceNameARM: 'HolyCheese-ServiceConnection'
           scriptType: pscore
           scriptLocation: inlineScript
           inlineScript: |
