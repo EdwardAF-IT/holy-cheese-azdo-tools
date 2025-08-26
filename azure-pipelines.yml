@@ -29,7 +29,6 @@ parameters:
 - name: packageVersion
   type: string
   default: 'auto'  # set to a short SHA to redeploy a specific version
-  required: false
 
 stages:
 - ${{ if eq(parameters.deployInfra, true) }}:
