@@ -28,7 +28,7 @@ parameters:
   default: 'azdotools'
 - name: packageVersion
   type: string
-  default: ''  # set to a short SHA to redeploy a specific version
+  default: 'auto'  # set to a short SHA to redeploy a specific version
   required: false
 
 stages:
