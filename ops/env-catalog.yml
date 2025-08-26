@@ -1,0 +1,34 @@
+# Environment catalog: avoids hardcoding resource names.
+# Names are derived via ops/naming.psm1 to keep one source of truth.
+
+environments:
+  dev:
+    location: "centralus"
+    regionCode: "cus"
+    tags: { org: "holycheese", env: "dev", owner: "edward" }
+    function:
+      sku: "EP1"
+      runtime: "dotnet-isolated"
+      dotnetVersion: "8.0"
+    deploy:
+      slot: "staging"              # blue/green for dev
+  test:
+    location: "centralus"
+    regionCode: "cus"
+    tags: { org: "holycheese", env: "test", owner: "edward" }
+    function:
+      sku: "EP1"
+      runtime: "dotnet-isolated"
+      dotnetVersion: "8.0"
+    deploy:
+      slot: ""                     # direct deploy
+  prod:
+    location: "centralus"
+    regionCode: "cus"
+    tags: { org: "holycheese", env: "prod", owner: "edward" }
+    function:
+      sku: "EP2"
+      runtime: "dotnet-isolated"
+      dotnetVersion: "8.0"
+    deploy:
+      slot: "staging"              # blue/green for prod

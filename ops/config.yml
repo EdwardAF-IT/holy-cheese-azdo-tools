@@ -1,0 +1,28 @@
+# Global, centralized configuration for org/app/paths/URIs and pipeline wiring.
+globals:
+  org: "holycheese"                 # Resource naming org token
+  app: "azdotools"                  # Resource naming app token
+  owner: "edward"                   # Tag owner value
+  subscriptionId: "42a2eb5c-8d13-451c-8b50-069e05cdbf86"
+
+paths:
+  namingModule: "ops/naming.psm1"
+  bicepMain: "infra/bicep/main.bicep"
+  functionProject: "src/TagRouterAzureFunction" 
+  publishDir: "publish"
+  packagePath: "apps/azdotools/dist/azdotools.zip"
+
+pipeline:
+  azureServiceConnection: "HolyCheese-ServiceConnection"
+  # Hosted agent is Azure Pipelines; we still specify vmImage per job.
+
+deployment:
+  containerName: "function-packages"  # blob container for function packages
+  healthCheckPath: "/api/ping"        # shared health check path for all envs
+  defaultDotnetSdk: "8.0.x"           # .NET SDK for build
+
+shared:
+  resourceGroup: "AzdoTools-Shared-RG"
+  appInsightsName: "AzdoTools-Shared-Insights"
+  planName: "AzdoTools-AppServicePlan-Shared"
+

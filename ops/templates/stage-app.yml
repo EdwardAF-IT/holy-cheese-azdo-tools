@@ -1,0 +1,67 @@
+parameters:
+- name: targetEnvs
+  type: object
+- name: appName
+  type: string
+- name: packageVersion
+  type: string
+
+stages:
+- stage: App
+  displayName: App
+  jobs:
+  - job: BuildPublish
+    displayName: Build and publish ${{ parameters.appName }}
+    pool:
+      name: 'Azure Pipelines'
+      vmImage: 'windows-latest'
+    steps:
+    - task: UseDotNet@2
+      displayName: Setup .NET SDK
+      inputs:
+        packageType: 'sdk'
+        version: '$(DotnetSdk)'   # Define DotnetSdk=8.0.x in pipeline variables or derive from ops/config.yaml in a script
+    - task: PowerShell@2
+      displayName: Build app
+      inputs:
+        pwsh: true
+        filePath: ops/scripts/build-app.ps1
+        arguments: -App ${{ parameters.appName }}
+    - task: AzureCLI@2
+      displayName: Publish package to all target env storages
+      inputs:
+        azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          $envs = @(@'
+${{ join(parameters.targetEnvs, "' , '") }}
+'@)
+          pwsh -File ops/scripts/publish-package.ps1 -Envs $envs -App '${{ parameters.appName }}'
+
+  - ${{ each envName in parameters.targetEnvs }}:
+    - job: Deploy_${{ envName }}
+      displayName: Deploy ${{ parameters.appName }} (${{ envName }})
+      dependsOn: BuildPublish
+      pool:
+        name: 'Azure Pipelines'
+        vmImage: 'windows-latest'
+      steps:
+      - task: AzureCLI@2
+        displayName: Infra readiness check (${{ envName }})
+        inputs:
+          azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+          scriptType: pscore
+          scriptLocation: scriptPath
+          scriptPath: ops/scripts/check-infra.ps1
+          arguments: -Env ${{ envName }}
+      - task: AzureCLI@2
+        displayName: Deploy function (${{ envName }})
+        inputs:
+          azureSubscription: '$(AZURE_SERVICE_CONNECTION)'
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            $version = '${{ parameters.packageVersion }}'
+            if ([string]::IsNullOrWhiteSpace($version)) { $version = $env:BUILD_SOURCEVERSION.Substring(0,7) }
+            pwsh -File ops/scripts/deploy-app.ps1 -Env '${{ envName }}' -App '${{ parameters.appName }}' -Version $version

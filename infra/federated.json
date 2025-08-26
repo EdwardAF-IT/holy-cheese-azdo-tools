@@ -1,9 +1,0 @@
-{
-  "description": "Federated identity for Azure DevOps service connection",
-  "name": "HolyCheeseFederation",
-  "issuer": "https://vstoken.dev.azure.com/23f0a6a8-d2a2-4543-8d7e-099223b39d4d",
-  "subject": "sc://techwavellc/holy-cheese/HolyCheese-ServiceConnection",
-  "audiences": [
-    "api://AzureADTokenExchange"
-  ]
-}

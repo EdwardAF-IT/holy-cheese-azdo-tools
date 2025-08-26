@@ -1,0 +1,25 @@
+parameters:
+- name: targetEnvs
+  type: object
+
+stages:
+- stage: Infra
+  displayName: Infra
+  jobs:
+  - ${{ each envName in parameters.targetEnvs }}:
+    - job: Deploy_${{ envName }}
+      displayName: Deploy infra (${{ envName }})
+      pool:
+        name: 'Azure Pipelines'
+        vmImage: 'ubuntu-latest'
+      steps:
+      - task: AzureCLI@2
+        displayName: Deploy infra (${{ envName }})
+        inputs:
+          azureSubscription: '$(AZURE_SERVICE_CONNECTION)'   # bound via variable to config value
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            # Mirror ops/config.yaml into a pipeline variable at queue-time
+            # Or set this library variable: AZURE_SERVICE_CONNECTION = HolyCheese-ServiceConnection
+            pwsh -File ops/scripts/deploy-infra.ps1 -Env '${{ envName }}'

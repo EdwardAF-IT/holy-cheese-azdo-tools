@@ -1,0 +1,4 @@
+# Common app settings merged at deploy time; WEBSITE_RUN_FROM_PACKAGE is injected dynamically
+settings:
+  FUNCTIONS_WORKER_RUNTIME: "dotnet-isolated"
+  DOTNET_VERSION: "8.0"

@@ -1,0 +1,10 @@
+framework: "dotnet-isolated-8.0"
+
+# Build/test commands
+restore: "dotnet restore ./src/TagRouterAzureFunction"
+build: "dotnet build ./src/TagRouterAzureFunction -c Release"
+test: "dotnet test ./tests/unit -c Release --logger 'trx;LogFileName=unit.trx'"
+
+package:
+  # Packaging is centralized; this path must align with ops/config.yaml
+  path: "apps/azdotools/dist/azdotools.zip"

@@ -1,0 +1,44 @@
+# Orchestrator pipeline for infra and app. Uses hosted agents only.
+
+trigger:
+  branches: { include: [ main ] }
+  paths:
+    include:
+      - infra/**
+      - ops/**
+      - apps/**
+      - src/**
+      - tests/**
+
+pr:
+  branches: { include: [ main ] }
+
+parameters:
+- name: deployInfra
+  type: boolean
+  default: true
+- name: deployApp
+  type: boolean
+  default: true
+- name: targetEnvs
+  type: object
+  default: [ 'dev' ]
+- name: appName
+  type: string
+  default: 'azdotools'
+- name: packageVersion
+  type: string
+  default: ''  # set to a short SHA to redeploy a specific version
+
+stages:
+- ${{ if eq(parameters.deployInfra, true) }}:
+  - template: ops/templates/stage-infra.yml
+    parameters:
+      targetEnvs: ${{ parameters.targetEnvs }}
+
+- ${{ if eq(parameters.deployApp, true) }}:
+  - template: ops/templates/stage-app.yml
+    parameters:
+      targetEnvs: ${{ parameters.targetEnvs }}
+      appName: ${{ parameters.appName }}
+      packageVersion: ${{ parameters.packageVersion }}
