@@ -16,7 +16,7 @@ stages:
       - task: AzureCLI@2
         displayName: Deploy infra (${{ envName }})
         inputs:
-          azureSubscription: '$(AZURE_SERVICE_CONNECTION)'   # bound via variable to config value
+          azureSubscription: azureServiceConnection   # bound via variable to config value
           scriptType: pscore
           scriptLocation: inlineScript
           inlineScript: |
