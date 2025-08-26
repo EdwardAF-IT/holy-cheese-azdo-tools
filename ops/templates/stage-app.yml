@@ -54,7 +54,7 @@ stages:
       pool:
         name: 'Azure Pipelines'
         vmImage: 'windows-latest'
-      environment: 'AzdoTools-${{ envName | title }}'
+        environment: ${{ format('AzdoTools-{0}', envName) }}
       steps:
       - task: AzureCLI@2
         displayName: Infra readiness check (${{ envName }})
