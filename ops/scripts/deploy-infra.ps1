@@ -26,11 +26,13 @@ az account set --subscription $subId | Out-Null
 $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
 Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
-$tagString = [string]::Format("org={0} app={1} scope=shared", $cfg.globals.org, $cfg.globals.app)
+$tagOrg   = [string]::Format("org={0}",   $cfg.globals.org)
+$tagApp   = [string]::Format("app={0}",   $cfg.globals.app)
+$tagScope = [string]::Format("scope={0}", "shared"
 az group create `
     -n $sharedRg `
     -l $location `
-    -tags @tagString | Out-Null
+    -tags $tagOrg $tagApp $tagScope | Out-Null
 
 # Deploy shared Bicep
 if (-not (Test-Path $cfg.paths.bicep.shared)) {
