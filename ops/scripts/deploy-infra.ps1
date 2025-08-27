@@ -28,7 +28,7 @@ $location = $cfg.globals.location
 Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
 $tagOrg   = [string]::Format("org={0}",   $cfg.globals.org)
 $tagApp   = [string]::Format("app={0}",   $cfg.globals.app)
-$tagScope = [string]::Format("scope={0}", "shared"
+$tagScope = [string]::Format("scope={0}", "shared")
 az group create `
     -n $sharedRg `
     -l $location `
