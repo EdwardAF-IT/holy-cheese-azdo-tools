@@ -32,7 +32,7 @@ $tagScope = [string]::Format("scope={0}", "shared")
 az group create `
     -n $sharedRg `
     -l $location `
-    -tags $tagOrg $tagApp $tagScope | Out-Null
+    --tags $tagOrg $tagApp $tagScope | Out-Null
 
 # Deploy shared Bicep
 if (-not (Test-Path $cfg.paths.bicep.shared)) {
