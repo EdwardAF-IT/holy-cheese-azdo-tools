@@ -44,6 +44,10 @@ Import-Module $namePath -Force
 
 # Select subscription
 $subId = ($cfg.globals.subscriptionId | Out-String).Trim()
+Write-Host "DEBUG at guard: cfg.globals.subscriptionId = '$($cfg.globals.subscriptionId)'"
+Write-Host "DEBUG at guard: subId = '$subId'"
+Write-Host "DEBUG at guard: cfg type = $($cfg.GetType().FullName)"
+Write-Host "DEBUG at guard: subId type = $($subId?.GetType().FullName)"
 
 if ([string]::IsNullOrWhiteSpace($subId)) {
     throw "Subscription Id is missing or empty in config.yml"
