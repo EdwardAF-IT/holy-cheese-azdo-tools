@@ -9,8 +9,7 @@ $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot/_common.ps1"
 $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$specName= [string]::Format($cfg.appBuildSpec, $App)
-$spec = Import-YamlSafely -Path (Join-Path $PSScriptRoot $specName)
+$spec = Import-YamlSafely -Path ([string]::Format($cfg.appBuildSpec, $App))
 
 # Restore/build/test
 if ($spec.restore) { Invoke-Expression $spec.restore }

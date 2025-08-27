@@ -15,13 +15,12 @@ $ErrorActionPreference = 'Stop'
 # Load shared config and helpers
 . "$PSScriptRoot/_common.ps1"
 $cfg     = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$envs    = Import-YamlSafely -Path (IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.envCatalog))
+$envs    = Import-YamlSafely -Path $cfg.paths.envCatalog
 $envCfg  = $envs.environments.$Env
 if (-not $envCfg) { throw "Unknown environment '$Env'" }
 
 # Import naming
-$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
-Import-Module $namePath -Force
+Import-Module $cfg.paths.namingModule -Force
 az account set --subscription $cfg.globals.subscriptionId | Out-Null
 
 # Compute resource names
@@ -70,8 +69,7 @@ $sas       = az storage blob generate-sas `
 $pkgUrl = [string]::Format("https://{0}.blob.core.windows.net/{1}/{2}?{3}", $stg, $container, $blob, $sas)
 
 # Load app settings from deploy spec
-$specName= [string]::Format($cfg.appBuildSpec, $App)
-$deploySpec = Import-YamlSafely -Path (Join-Path $PSScriptRoot $specName)
+$deploySpec = Import-YamlSafely -Path ([string]::Format($cfg.appDeploySpec, $App))
 $settings   = @()
 $deploySpec.settings.GetEnumerator() | ForEach-Object {
   $settings += [string]::Format("{0}={1}", $_.Key, $_.Value)

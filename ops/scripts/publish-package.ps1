@@ -10,8 +10,8 @@ $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot/_common.ps1"
 $cfg  = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$envs = Import-YamlSafely -Path (IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.envCatalog))
-Import-Module [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule) -Force
+$envs = Import-YamlSafely -Path $cfg.paths.envCatalog
+Import-Module $cfg.paths.namingModule -Force
 
 # Select subscription once
 az account set --subscription $cfg.globals.subscriptionId | Out-Null

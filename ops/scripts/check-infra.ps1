@@ -9,13 +9,12 @@ $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot/_common.ps1"
 $cfg  = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$envs = Import-YamlSafely -Path (IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.envCatalog))
+$envs = Import-YamlSafely -Path $cfg.paths.envCatalog
 $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
 
 # Import naming
-$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
-Import-Module $namePath -Force
+Import-Module $cfg.paths.namingModule -Force
 
 # Subscription
 az account set --subscription $cfg.globals.subscriptionId | Out-Null
