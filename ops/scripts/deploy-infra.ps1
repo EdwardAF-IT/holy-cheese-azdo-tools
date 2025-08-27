@@ -75,7 +75,7 @@ $jsonRaw = az deployment group create `
            app   = $cfg.globals.app
            scope = 'shared'
        }) `
-    --query 'properties.outputs' `
+    --debug `
     -o json
 
 # Debug: show exactly what came back
