@@ -20,7 +20,9 @@ $envCfg  = $envs.environments.$Env
 if (-not $envCfg) { throw "Unknown environment '$Env'" }
 
 # Import naming
-Import-Module $cfg.paths.namingModule -Force
+$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
+Import-Module $namePath -Force
+
 az account set --subscription $cfg.globals.subscriptionId | Out-Null
 
 # Compute resource names
@@ -69,7 +71,7 @@ $sas       = az storage blob generate-sas `
 $pkgUrl = [string]::Format("https://{0}.blob.core.windows.net/{1}/{2}?{3}", $stg, $container, $blob, $sas)
 
 # Load app settings from deploy spec
-$deploySpec = Import-YamlSafely -Path ([string]::Format($cfg.appDeploySpec, $App))
+$deploySpec = Import-YamlSafely -Path ([string]::Format($cfg.appSpec, $App))
 $settings   = @()
 $deploySpec.settings.GetEnumerator() | ForEach-Object {
   $settings += [string]::Format("{0}={1}", $_.Key, $_.Value)

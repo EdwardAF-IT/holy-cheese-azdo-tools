@@ -15,7 +15,8 @@ $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
 
 # Import naming
-Import-Module $cfg.paths.namingModule -Force
+$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
+Import-Module $namePath -Force
 
 # Select subscription
 $subId = $cfg.globals.subscriptionId
