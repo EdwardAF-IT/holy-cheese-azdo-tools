@@ -26,10 +26,11 @@ az account set --subscription $subId | Out-Null
 $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
 Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
+$tagString = [string]::Format("org={0} app={1} scope=shared", $cfg.globals.org, $cfg.globals.app)
 az group create `
     -n $sharedRg `
     -l $location `
-    -tags @{ org=$cfg.globals.org; app=$cfg.globals.app; scope='shared' } | Out-Null
+    -tags @tagString | Out-Null
 
 # Deploy shared Bicep
 if (-not (Test-Path $cfg.paths.bicep.shared)) {
@@ -42,7 +43,7 @@ $deployment = az deployment group create `
     -p resourceGroupName=$sharedRg `
        subscriptionId=$cfg.globals.subscriptionId `
        location=$location `
-       tags=@{ org=$cfg.globals.org; app=$cfg.globals.app; scope='shared' } `
+       tags=$tagString `
     --query 'properties.outputs' `
     -o json | ConvertFrom-Json
 
