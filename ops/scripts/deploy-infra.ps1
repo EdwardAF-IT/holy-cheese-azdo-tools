@@ -48,7 +48,7 @@ az account set --subscription $subId | Out-Null
 
 # Subscription-level resources
 $sharedRg = $cfg.shared.resourceGroup
-$location = $cfg.globals.
+$location = $cfg.globals.location
 $sharedBicepPath = $cfg.paths.bicep.shared
 Write-Host ("Ensuring shared RG '{0}' exists in location '{1}'" -f $sharedRg, $location)
 
