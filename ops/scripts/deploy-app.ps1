@@ -13,7 +13,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Load shared config and helpers
-. "$PSScriptRoot/_common.ps1"
+Import-Module "$PSScriptRoot/_common.psm1" -Force
 $cfg     = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
 $envs    = Import-YamlSafely -Path $cfg.paths.envCatalog
 $envCfg  = $envs.environments.$Env

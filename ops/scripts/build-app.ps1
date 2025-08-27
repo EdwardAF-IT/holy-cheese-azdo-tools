@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-. "$PSScriptRoot/_common.ps1"
+Import-Module "$PSScriptRoot/_common.psm1" -Force
 $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
 $spec = Import-YamlSafely -Path ([string]::Format($cfg.appBuildSpec, $App))
 

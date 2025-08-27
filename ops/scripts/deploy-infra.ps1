@@ -37,7 +37,7 @@ $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
 $envs = Import-YamlSafely -Path $cfg.paths.envCatalog
 $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
-Write-Host ("cfg: {0}" -f $cfg)
+Write-Host ("cfg: {0}" -f $cfg.globals.subscriptionId)
 # Import naming
 $namePath = [IO.Path]::Combine($PSScriptRoot, '../..', $cfg.paths.namingModule)
 Import-Module $namePath -Force
