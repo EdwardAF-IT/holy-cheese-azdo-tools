@@ -37,13 +37,17 @@ $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
 $envs = Import-YamlSafely -Path $cfg.paths.envCatalog
 $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
-Write-Host ("cfg: {0}" -f $cfg.globals.subscriptionId)
+
 # Import naming
 $namePath = [IO.Path]::Combine($PSScriptRoot, '../..', $cfg.paths.namingModule)
 Import-Module $namePath -Force
 
 # Select subscription
 $subId = [string]$cfg.globals.subscriptionId
+Write-Host "DEBUG: subscriptionId value is: '$subscriptionId'"
+Write-Host "DEBUG: Type is: $($subscriptionId.GetType().FullName)"
+Write-Host "DEBUG: Length is: $($subscriptionId.Length)"
+
 if (-not $subscriptionId -or $subscriptionId -match '^\s*$') {
     throw "Subscription Id is missing or empty in config.yml"
 }
