@@ -7,9 +7,28 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-function New-Tag {
-    param([string]$Name, [string]$Value)
-    return [string]::Format("{0}={1}", $Name, $Value)
+function New-TagsJson {
+    <#
+    .SYNOPSIS
+        Builds an Azure CLI/Bicep‑friendly tags JSON string.
+
+    .DESCRIPTION
+        Accepts one or more name/value pairs and returns a JSON object string
+        that can be passed to `az deployment ... -p tags="..."` without
+        CLI parsing errors.
+
+    .EXAMPLE
+        $tags = New-TagsJson -Tags @{ org = 'holycheese'; app = 'azdotools'; scope = 'shared' }
+        az group create -n MyRG -l centralus --tags $tags
+    #>
+    param(
+        [Parameter(Mandatory)]
+        [hashtable]$Tags
+    )
+
+    # Convert to JSON and strip newlines/indentation
+    $json = $Tags | ConvertTo-Json -Compress
+    return $json
 }
 
 # Load helpers and configs
@@ -31,13 +50,15 @@ az account set --subscription $subId | Out-Null
 $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
 Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
-$tagOrg   = New-Tag 'org'   $cfg.globals.org
-$tagApp   = New-Tag 'app'   $cfg.globals.app
-$tagScope = New-Tag 'scope' 'shared'
+$sharedTags = @{
+    org   = $cfg.globals.org
+    app   = $cfg.globals.app
+    scope = 'shared'
+}
 az group create `
     -n $sharedRg `
     -l $location `
-    --tags $tagOrg $tagApp $tagScope | Out-Null
+    --tags (New-TagsJson -Tags $sharedTags) | Out-Null
 
 # Deploy shared Bicep
 if (-not (Test-Path $cfg.paths.bicep.shared)) {
