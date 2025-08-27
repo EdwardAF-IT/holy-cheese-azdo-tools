@@ -43,7 +43,11 @@ $namePath = [IO.Path]::Combine($PSScriptRoot, '../..', $cfg.paths.namingModule)
 Import-Module $namePath -Force
 
 # Select subscription
-$subId = $cfg.globals.subscriptionId
+$subId = [string]$cfg.globals.subscriptionId
+if (-not $subscriptionId -or $subscriptionId -match '^\s*$') {
+    throw "Subscription Id is missing or empty in config.yml"
+}
+
 az account set --subscription $subId | Out-Null
 
 # Subscription-level resources
@@ -68,7 +72,7 @@ $jsonRaw = az deployment group create `
     -g $sharedRg `
     -f $sharedBicepPath `
     -p resourceGroupName=$sharedRg `
-       subscriptionId=$cfg.globals.subscriptionId `
+       subscriptionId=$subId `
        location=$location `
        tags=(New-TagsJson -Tags @{
            org   = $cfg.globals.org
