@@ -31,15 +31,14 @@ az group create `
     -l $location `
     -tags @{ org=$cfg.globals.org; app=$cfg.globals.app; scope='shared' } | Out-Null
 
-# Deploy shared Bicep (idempotent)
-$sharedBicepPath = [string]::Format("{0}/../{1}", $PSScriptRoot, $cfg.paths.bicep.shared)
-if (-not (Test-Path $sharedBicepPath)) {
-    throw [string]::Format("Shared Bicep file not found: {0}", $sharedBicepPath)
+# Deploy shared Bicep
+if (-not (Test-Path $cfg.paths.bicep.shared)) {
+    throw [string]::Format("Shared Bicep file not found: {0}", $cfg.paths.bicep.shared)
 }
-Write-Host ([string]::Format("Deploying shared infra from {0}", $sharedBicepPath))
+Write-Host ([string]::Format("Deploying shared infra from {0}", $cfg.paths.bicep.shared))
 az deployment group create `
     -g $sharedRg `
-    -f $sharedBicepPath `
+    -f $cfg.paths.bicep.shared `
     -p location=$location `
     --only-show-errors
 
