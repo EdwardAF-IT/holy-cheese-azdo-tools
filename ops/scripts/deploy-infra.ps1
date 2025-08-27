@@ -22,11 +22,31 @@ Import-Module $namePath -Force
 $subId = $cfg.globals.subscriptionId
 az account set --subscription $subId | Out-Null
 
+# Subscription-level resources
+$sharedRg = $cfg.shared.resourceGroup
+$location = $cfg.globals.location
+Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
+az group create `
+    -n $sharedRg `
+    -l $location `
+    -tags @{ org=$cfg.globals.org; app=$cfg.globals.app; scope='shared' } | Out-Null
+
+# Deploy shared Bicep (idempotent)
+$sharedBicepPath = [string]::Format("{0}/../{1}", $PSScriptRoot, $cfg.paths.bicep.shared)
+if (-not (Test-Path $sharedBicepPath)) {
+    throw [string]::Format("Shared Bicep file not found: {0}", $sharedBicepPath)
+}
+Write-Host ([string]::Format("Deploying shared infra from {0}", $sharedBicepPath))
+az deployment group create `
+    -g $sharedRg `
+    -f $sharedBicepPath `
+    -p location=$location `
+    --only-show-errors
+
 # Compute names once via naming module
 $org = $cfg.globals.org
 $app = $cfg.globals.app
 $region = $envCfg.regionCode
-$sharedRg = $cfg.shared.resourceGroup
 $aiName = $cfg.shared.appInsightsName
 $aspName = $cfg.shared.planName
 
@@ -39,7 +59,10 @@ $kvName  = New-ResourceName -Org $org -App $app -Env $Env -RegionCode $region -S
 
 # Ensure RG exists with tags
 $tags = $envCfg.tags
-az group create -n $rgName -l $envCfg.location --tags $tags | Out-Null
+az group create `
+    -n $rgName `
+    -l $envCfg.location `
+    --tags $tags | Out-Null
 
 # Deploy Bicep at resource-group scope, passing precomputed names
 $bicep = $cfg.paths.bicepMain
@@ -47,13 +70,13 @@ $runtime = $envCfg.function.runtime
 $sku = $envCfg.function.sku
 
 az deployment group create `
-  -g $rgName `
-  -f $bicep `
-  -p env=$Env location=$($envCfg.location) regionCode=$region `
-     org=$org app=$app `
-     rgName=$rgName storageName=$stgName appInsightsName=$aiName planName=$aspName functionAppName=$fnName keyVaultName=$kvName `
-     functionSku=$sku runtime=$runtime `
-  --only-show-errors
+    -g $rgName `
+    -f $bicep `
+    -p env=$Env location=$($envCfg.location) regionCode=$region `
+       org=$org app=$app `
+       rgName=$rgName storageName=$stgName appInsightsName=$aiName planName=$aspName functionAppName=$fnName keyVaultName=$kvName `
+       functionSku=$sku runtime=$runtime `
+    --only-show-errors
 
 # Mark infra ready
 az group update -n $rgName --set tags.org\\:infraReady=true | Out-Null
