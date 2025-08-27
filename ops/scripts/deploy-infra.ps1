@@ -7,6 +7,11 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
+function New-Tag {
+    param([string]$Name, [string]$Value)
+    return [string]::Format("{0}={1}", $Name, $Value)
+}
+
 # Load helpers and configs
 . "$PSScriptRoot/_common.ps1"
 $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
@@ -26,9 +31,9 @@ az account set --subscription $subId | Out-Null
 $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
 Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
-$tagOrg   = [string]::Format("org={0}",   $cfg.globals.org)
-$tagApp   = [string]::Format("app={0}",   $cfg.globals.app)
-$tagScope = [string]::Format("scope={0}", "shared")
+$tagOrg   = New-Tag 'org'   $cfg.globals.org
+$tagApp   = New-Tag 'app'   $cfg.globals.app
+$tagScope = New-Tag 'scope' 'shared'
 az group create `
     -n $sharedRg `
     -l $location `
@@ -41,7 +46,7 @@ if (-not (Test-Path $cfg.paths.bicep.shared)) {
 Write-Host ([string]::Format("Deploying shared infra from {0}", $cfg.paths.bicep.shared))
 $deployment = az deployment group create `
     -g $sharedRg `
-    -f $sharedBicepPath `
+    -f $cfg.paths.bicep.shared `
     -p resourceGroupName=$sharedRg `
        subscriptionId=$cfg.globals.subscriptionId `
        location=$location `
