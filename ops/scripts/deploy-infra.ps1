@@ -36,11 +36,15 @@ if (-not (Test-Path $cfg.paths.bicep.shared)) {
     throw [string]::Format("Shared Bicep file not found: {0}", $cfg.paths.bicep.shared)
 }
 Write-Host ([string]::Format("Deploying shared infra from {0}", $cfg.paths.bicep.shared))
-az deployment group create `
+$deployment = az deployment group create `
     -g $sharedRg `
-    -f $cfg.paths.bicep.shared `
-    -p location=$location `
-    --only-show-errors
+    -f $sharedBicepPath `
+    -p resourceGroupName=$sharedRg `
+       subscriptionId=$cfg.globals.subscriptionId `
+       location=$location `
+       tags=@{ org=$cfg.globals.org; app=$cfg.globals.app; scope='shared' } `
+    --query 'properties.outputs' `
+    -o json | ConvertFrom-Json
 
 # Compute names once via naming module
 $org = $cfg.globals.org
@@ -49,7 +53,8 @@ $region = $envCfg.regionCode
 $aiName = $cfg.shared.appInsightsName
 $aspName = $cfg.shared.planName
 
-$aiKey = az monitor app-insights component show -g $sharedRg -n $aiName --query 'InstrumentationKey' -o tsv
+$aiKey = $deployment.instrumentationKey.value
+$aiConnection = $deployment.connectionString.value
 $planId = az appservice plan show -g $sharedRg -n $aspName --query 'id' -o tsv
 $rgName = New-ResourceName -Org $org -App $app -Env $Env -RegionCode $region -Suffix 'rg'
 $stgName = New-ResourceName -Org $org -App $app -Env $Env -RegionCode $region -Suffix 'stg'

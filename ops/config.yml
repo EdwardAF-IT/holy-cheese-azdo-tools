@@ -3,6 +3,7 @@ globals:
   org: "holycheese"                 # Resource naming org token
   app: "azdotools"                  # Resource naming app token
   owner: "edward"                   # Tag owner value
+  location: "centralus"
   subscriptionId: "42a2eb5c-8d13-451c-8b50-069e05cdbf86"
 
 paths:    # All paths are relative to repo root

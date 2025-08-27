@@ -20,6 +20,7 @@ resource ai 'microsoft.insights/components@2020-02-02' = {
 
 output aiID string = ai.id
 output instrumentationKey string = ai.properties.InstrumentationKey
+output connectionString string = ai.properties.ConnectionString
 
 resource plan 'Microsoft.Web/serverfarms@2024-11-01' = {
   name: 'AzdoTools-AppServicePlan-Shared'
