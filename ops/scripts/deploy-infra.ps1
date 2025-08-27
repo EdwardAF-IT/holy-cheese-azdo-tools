@@ -49,31 +49,51 @@ az account set --subscription $subId | Out-Null
 # Subscription-level resources
 $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
-Write-Host ([string]::Format("Ensuring shared RG '{0}' exists in location '{1}'", $sharedRg, $location))
-$sharedTags = @{
-    org   = $cfg.globals.org
-    app   = $cfg.globals.app
-    scope = 'shared'
-}
+Write-Host ("Ensuring shared RG '{0}' exists in location '{1}'" -f $sharedRg, $location)
+
 az group create `
     -n $sharedRg `
     -l $location `
-    --tags (New-TagsJson -Tags $sharedTags) | Out-Null
+    --tags (New-TagsJson -Tags @{
+        org   = $cfg.globals.org
+        app   = $cfg.globals.app
+        scope = 'shared'
+    }) | Out-Null
 
-# Deploy shared Bicep
-if (-not (Test-Path $cfg.paths.bicep.shared)) {
-    throw [string]::Format("Shared Bicep file not found: {0}", $cfg.paths.bicep.shared)
-}
-Write-Host ([string]::Format("Deploying shared infra from {0}", $cfg.paths.bicep.shared))
-$deployment = az deployment group create `
+Write-Host ("Deploying shared infra from {0}" -f $sharedBicepPath)
+
+# Run deployment and capture raw output
+$jsonRaw = az deployment group create `
     -g $sharedRg `
-    -f $cfg.paths.bicep.shared `
+    -f $sharedBicepPath `
     -p resourceGroupName=$sharedRg `
        subscriptionId=$cfg.globals.subscriptionId `
        location=$location `
-       tags=$tagString `
+       tags=(New-TagsJson -Tags @{
+           org   = $cfg.globals.org
+           app   = $cfg.globals.app
+           scope = 'shared'
+       }) `
     --query 'properties.outputs' `
-    -o json | ConvertFrom-Json
+    -o json
+
+# Debug: show exactly what came back
+Write-Host "----- Raw CLI output start -----"
+Write-Host $jsonRaw
+Write-Host "----- Raw CLI output end -----"
+
+# Check exit code before parsing
+if ($LASTEXITCODE -ne 0) {
+    throw "Shared Bicep deployment failed — see raw output above."
+}
+
+# Guard against empty or whitespace‑only output
+if ([string]::IsNullOrWhiteSpace($jsonRaw)) {
+    throw "No outputs were returned from the shared Bicep deployment."
+}
+
+# Finally, parse JSON
+$deployment = $jsonRaw | ConvertFrom-Json
 
 # Compute names once via naming module
 $org = $cfg.globals.org
