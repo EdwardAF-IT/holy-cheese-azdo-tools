@@ -5,12 +5,26 @@ globals:
   owner: "edward"                   # Tag owner value
   subscriptionId: "42a2eb5c-8d13-451c-8b50-069e05cdbf86"
 
-paths:
+paths:    # All paths are relative to repo root
+  config: "ops/config.yml"
+  envCatalog: "ops/env-catalog.yml"
   namingModule: "ops/naming.psm1"
+  scripts:
+    deployInfra: "ops/scripts/deploy-infra.ps1"
+    checkInfra: "ops/scripts/check-infra.ps1"
+    buildApp: "ops/scripts/build-app.ps1"
+    publishPackage: "ops/scripts/publish-package.ps1"
+    deployApp: "ops/scripts/deploy-app.ps1"
+  templates:
+    stageInfra: "ops/templates/stage-infra.yml"
+    stageApp: "ops/templates/stage-app.yml"
+  appBuildSpec: "apps/{0}/app.build.yml"  # {0} will be replaced by the actual app name later
+  appDeploySpec: "apps/{0}/app.deploy.yml"
   bicepMain: "infra/bicep/main.bicep"
+  bicepShared: "infra/bicep/modules/shared-resources.bicep"
   functionProject: "src/TagRouterAzureFunction" 
   publishDir: "publish"
-  packagePath: "apps/azdotools/dist/azdotools.zip"
+  packagePath: "apps/{0}/dist/{0}.zip"
 
 pipeline:
   azureServiceConnection: "HolyCheese-ServiceConnection"

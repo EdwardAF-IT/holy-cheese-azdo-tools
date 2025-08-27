@@ -10,13 +10,13 @@ $ErrorActionPreference = 'Stop'
 # Load helpers and configs
 . "$PSScriptRoot/_common.ps1"
 $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yml")
+$envs = Import-YamlSafely -Path ([IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.envCatalog))
 $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
 
 # Import naming
-$nmPath = $cfg.paths.namingModule
-Import-Module $nmPath -Force
+$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
+Import-Module $namePath -Force
 
 # Select subscription
 $subId = $cfg.globals.subscriptionId

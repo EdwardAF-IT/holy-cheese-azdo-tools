@@ -10,8 +10,8 @@ $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot/_common.ps1"
 $cfg  = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yml")
-Import-Module $cfg.paths.namingModule -Force
+$envs = Import-YamlSafely -Path (IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.envCatalog))
+Import-Module [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule) -Force
 
 # Select subscription once
 az account set --subscription $cfg.globals.subscriptionId | Out-Null
@@ -23,7 +23,7 @@ if (-not $version) {
 }
 $version = $version.Substring(0, [Math]::Min(7, $version.Length))
 
-$pkg = $cfg.paths.packagePath
+$pkg= [string]::Format($cfg.packagePath, $App)
 if (-not (Test-Path $pkg)) { throw [string]::Format("Package not found at {0}. Run build-app.ps1 first.", $pkg) }
 
 $container = $cfg.deployment.containerName

@@ -9,17 +9,21 @@ $ErrorActionPreference = 'Stop'
 
 . "$PSScriptRoot/_common.ps1"
 $cfg  = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$envs = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\env-catalog.yml")
+$envs = Import-YamlSafely -Path (IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.envCatalog))
 $envCfg = $envs.environments.$Env
 if (-not $envCfg) { throw [string]::Format("Unknown env '{0}'", $Env) }
 
-Import-Module $cfg.paths.namingModule -Force
+# Import naming
+$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
+Import-Module $namePath -Force
 
 # Subscription
 az account set --subscription $cfg.globals.subscriptionId | Out-Null
 
 # Compute names
-$org = $cfg.globals.org; $app = $cfg.globals.app; $region = $envCfg.regionCode
+$org = $cfg.globals.org
+$app = $cfg.globals.app
+$region = $envCfg.regionCode
 $rg  = New-ResourceName -Org $org -App $app -Env $Env -RegionCode $region -Suffix 'rg'
 $fn  = New-ResourceName -Org $org -App $app -Env $Env -RegionCode $region -Suffix 'func'
 

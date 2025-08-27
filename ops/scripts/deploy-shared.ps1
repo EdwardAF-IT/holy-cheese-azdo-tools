@@ -2,7 +2,8 @@ param([string]$Location = 'centralus')
 
 . "$PSScriptRoot/_common.ps1"
 $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
-$bicep = 'infra/bicep/modules/shared-resources.bicep'
+$bicep = $cfg.paths.bicepShared
+$rg = $cfg.shared.resourceGroup
 
 $tags = @{
   org = $cfg.globals.org
@@ -11,10 +12,10 @@ $tags = @{
 }
 
 az account set --subscription $cfg.globals.subscriptionId
-az group create -n 'AzdoTools-Shared-RG' -l $Location --tags $tags | Out-Null
+az group create -n $rg -l $Location --tags $tags | Out-Null
 
 az deployment group create `
-  -g 'AzdoTools-Shared-RG' `
+  -g $rg `
   -f $bicep `
   -p location=$Location tags=$tags `
   --only-show-errors
