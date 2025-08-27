@@ -43,9 +43,9 @@ $namePath = [IO.Path]::Combine($PSScriptRoot, '../..', $cfg.paths.namingModule)
 Import-Module $namePath -Force
 
 # Select subscription
-$subscriptionId = ($cfg.globals.subscriptionId | Out-String).Trim()
+$subId = ($cfg.globals.subscriptionId | Out-String).Trim()
 
-if ([string]::IsNullOrWhiteSpace($subscriptionId)) {
+if ([string]::IsNullOrWhiteSpace($subId)) {
     throw "Subscription Id is missing or empty in config.yml"
 }
 
