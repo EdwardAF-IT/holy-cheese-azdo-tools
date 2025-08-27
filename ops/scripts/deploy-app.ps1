@@ -20,7 +20,7 @@ $envCfg  = $envs.environments.$Env
 if (-not $envCfg) { throw "Unknown environment '$Env'" }
 
 # Import naming
-$namePath = [IO.Path]::Combine($PSScriptRoot, '..', $cfg.paths.namingModule)
+$namePath = [IO.Path]::Combine($PSScriptRoot, '../..', $cfg.paths.namingModule)
 Import-Module $namePath -Force
 
 az account set --subscription $cfg.globals.subscriptionId | Out-Null
