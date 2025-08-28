@@ -23,7 +23,8 @@ paths:    # All paths are relative to repo root
   appBuildSpec: "apps/{0}/app.build.yml"  # {0} will be replaced by the actual app name later
   appDeploySpec: "apps/{0}/app.deploy.yml"
   bicep:
-    main: "infra/bicep/main.bicep"
+    rgScoped: "infra/bicep/main.rg-scoped.bicep"
+    subScoped: "infra/bicep/main.sub-scoped.bicep"
     shared: "infra/bicep/modules/shared-resources.bicep"
   functionProject: "src/TagRouterAzureFunction" 
   publishDir: "publish"

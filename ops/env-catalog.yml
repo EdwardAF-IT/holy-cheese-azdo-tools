@@ -11,7 +11,7 @@ environments:
       runtime: "dotnet-isolated"
       dotnetVersion: "8.0"
     deploy:
-      slot: "staging"              # blue/green for dev
+      slot: ""              
   test:
     location: "centralus"
     regionCode: "cus"
