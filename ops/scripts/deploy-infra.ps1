@@ -55,7 +55,7 @@ $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
 $sharedBicepPath = $cfg.paths.bicep.shared
 Write-Host ("Ensuring shared RG '{0}' exists in location '{1}'" -f $sharedRg, $location)
-Write-Host "DEBUG: template path is '$sharedBicepPath'"
+Write-Host "DEBUG: bicep path is '$sharedBicepPath'"
 
 $tags = New-TagsJson -Tags @{
            org   = $cfg.globals.org
@@ -74,7 +74,7 @@ $jsonRaw = az deployment group create `
        subscriptionId=$subId `
        location=$location `
        tags="$tags" `
-    --debug `
+    --query 'properties.outputs' `
     -o json
 
 # Debug: show exactly what came back
@@ -118,13 +118,13 @@ az group create `
     --tags "$tags" | Out-Null
 
 # Deploy Bicep at resource-group scope, passing precomputed names
-$bicep = $cfg.paths.bicepMain
+$bicepMain = $cfg.paths.bicep.main
 $runtime = $envCfg.function.runtime
 $sku = $envCfg.function.sku
 
 az deployment group create `
     -g $rgName `
-    -f $bicep `
+    -f $bicepMain `
     -p env=$Env location=$($envCfg.location) regionCode=$region `
        org=$org app=$app `
        rgName=$rgName storageName=$stgName appInsightsName=$aiName planName=$aspName functionAppName=$fnName keyVaultName=$kvName `
