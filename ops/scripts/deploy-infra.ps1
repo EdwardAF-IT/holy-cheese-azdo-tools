@@ -56,29 +56,23 @@ $location = $cfg.globals.location
 $sharedBicepPath = $cfg.paths.bicep.shared
 Write-Host ("Ensuring shared RG '{0}' exists in location '{1}'" -f $sharedRg, $location)
 
+$tags = New-TagsJson -Tags @{
+           org   = $cfg.globals.org
+           app   = $cfg.globals.app
+           scope = 'shared'
+        }
 az group create `
     -n $sharedRg `
     -l $location `
-    --tags "(New-TagsJson -Tags @{
-        org   = $cfg.globals.org
-        app   = $cfg.globals.app
-        scope = 'shared'
-    })" | Out-Null
+    --tags "$tags"
 
-Write-Host ("Deploying shared infra from {0}" -f $sharedBicepPath)
-
-# Run deployment and capture raw output
 $jsonRaw = az deployment group create `
     -g $sharedRg `
     -f $sharedBicepPath `
     -p resourceGroupName=$sharedRg `
        subscriptionId=$subId `
        location=$location `
-       tags="(New-TagsJson -Tags @{
-           org   = $cfg.globals.org
-           app   = $cfg.globals.app
-           scope = 'shared'
-       })" `
+       tags="$tags" `
     --debug `
     -o json
 
@@ -120,7 +114,7 @@ $tags = $envCfg.tags
 az group create `
     -n $rgName `
     -l $envCfg.location `
-    --tags $tags | Out-Null
+    --tags "$tags" | Out-Null
 
 # Deploy Bicep at resource-group scope, passing precomputed names
 $bicep = $cfg.paths.bicepMain
