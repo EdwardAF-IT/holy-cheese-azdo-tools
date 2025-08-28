@@ -18,6 +18,7 @@ resource stg 'Microsoft.Storage/storageAccounts@2023-04-01' = {
         file: { enabled: true, keyType: 'Account' }
       }
       keySource: 'Microsoft.Storage'
+    }
   }
 }
 
