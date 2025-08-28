@@ -55,6 +55,7 @@ $sharedRg = $cfg.shared.resourceGroup
 $location = $cfg.globals.location
 $sharedBicepPath = $cfg.paths.bicep.shared
 Write-Host ("Ensuring shared RG '{0}' exists in location '{1}'" -f $sharedRg, $location)
+Write-Host "DEBUG: template path is '$sharedBicepPath'"
 
 $tags = New-TagsJson -Tags @{
            org   = $cfg.globals.org
