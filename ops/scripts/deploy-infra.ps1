@@ -30,7 +30,7 @@ function New-TagsJson {
     $json = $Tags | ConvertTo-Json -Compress
     return $json
 }
-Set-PSDebug -Trace 1
+
 # Load helpers and configs
 Import-Module "$PSScriptRoot/_common.psm1" -Force
 $cfg = Import-YamlSafely -Path (Join-Path $PSScriptRoot "..\config.yml")
