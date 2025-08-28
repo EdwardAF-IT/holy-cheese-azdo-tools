@@ -48,7 +48,7 @@ Write-Host "DEBUG: Just assigned subId='$subId' (len=$($subId.Length))"
 Write-Host "DEBUG at guard: cfg.globals.subscriptionId = '$($cfg.globals.subscriptionId)'"
 Write-Host "DEBUG at guard: subId = '$subId'"
 Write-Host "DEBUG at guard: cfg type = $($cfg.GetType().FullName)"
-Write-Host "DEBUG at guard: subId type = $($subId?.GetType().FullName)"
+Write-Host "DEBUG at guard: subId type = $($subId.GetType().FullName)"
 
 if ([string]::IsNullOrWhiteSpace($subId)) {
     throw "Subscription Id is missing or empty in config.yml"
