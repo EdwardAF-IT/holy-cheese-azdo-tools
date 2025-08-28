@@ -44,6 +44,7 @@ Import-Module $namePath -Force
 
 # Select subscription
 $subId = ($cfg.globals.subscriptionId | Out-String).Trim()
+Write-Host "DEBUG: Just assigned subId='$subId' (len=$($subId.Length))"
 Write-Host "DEBUG at guard: cfg.globals.subscriptionId = '$($cfg.globals.subscriptionId)'"
 Write-Host "DEBUG at guard: subId = '$subId'"
 Write-Host "DEBUG at guard: cfg type = $($cfg.GetType().FullName)"
